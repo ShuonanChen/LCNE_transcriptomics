@@ -26,17 +26,25 @@ def draw_scale_bar(ax, length_px, px_to_mm=25*1e-3, loc=(0.1, 0.05), linewidth=4
             f'{length_px * px_to_mm:.1f} mm',ha='center', va='bottom')
 
     
-def plot_mesh(ax: Any, allmeshes, direction: str = 'c') -> None:
+def plot_mesh(ax: Any, allmeshes, 
+              direction: str = 'c', 
+             meshcol = 'lightgray') -> None:
     """
     Plot the three meshes on the given axis.
     parameter direction: select index to choose coordinate ('c' uses index 2, otherwise index 0)
+    allmeshes is a dictionary now
     """
-    mesh_LC, mesh_CD, mesh_CV = allmeshes
+    import trimesh
     ax.set_aspect('equal')
     i = 2 if direction == 'c' else 0
-    ax.triplot(mesh_LC.vertices.T[i], mesh_LC.vertices.T[1], mesh_LC.faces, alpha=0.1, label='LC')
-    ax.triplot(mesh_CD.vertices.T[i], mesh_CD.vertices.T[1], mesh_CD.faces, alpha=0.1, label='CD')
-    ax.triplot(mesh_CV.vertices.T[i], mesh_CV.vertices.T[1], mesh_CV.faces, alpha=0.1, label='CV')
+    if isinstance(allmeshes, dict):  #, trimesh.Trimesh
+        for k,mesh in allmeshes.items():
+            ax.triplot(mesh.vertices.T[i], mesh.vertices.T[1], mesh.faces, alpha=0.4, label=k, color =meshcol)
+    elif isinstance(allmeshes, trimesh.Trimesh):
+        ax.triplot(allmeshes.vertices.T[i], allmeshes.vertices.T[1], allmeshes.faces, alpha=0.4, color =meshcol)
+    else:
+        print('wrong mesh input') 
+    
     ax.invert_yaxis()
     
 from sklearn.preprocessing import LabelEncoder

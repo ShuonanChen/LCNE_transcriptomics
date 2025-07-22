@@ -28,8 +28,10 @@ def impute_spatial_coordinates(adata_query, adata_ref, k=3, epsilon=1e-10):
     # Extract and normalize expression matrices
     X_query = adata_query[:, common_genes].X
     X_ref = adata_ref[:, common_genes].X
-    X_query_norm = processing.normalize_cols(X_query, ranked=True)
-    X_ref_norm = processing.normalize_cols(X_ref, ranked=True)
+#     X_query_norm = processing.normalize_cols(X_query, ranked=True)
+#     X_ref_norm = processing.normalize_cols(X_ref, ranked=True)
+    X_query_norm = processing.rankrows(X_query)
+    X_ref_norm = processing.rankrows(X_ref)
     
     # Find k nearest neighbors
     nbrs = NearestNeighbors(n_neighbors=k, metric='euclidean').fit(X_ref_norm)

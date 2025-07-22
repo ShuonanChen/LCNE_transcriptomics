@@ -41,19 +41,21 @@ def fit_trajectory_curve(adata_sc, deg=3, n_dims=2):
     u = get_arbitrary_orders(adata_sc)
     allcells_new_order = np.argsort(u)
     data = pca_data[allcells_new_order]
-    t_proj = u[allcells_new_order]
-    
-    # fit separate polynomials x(t), y(t)    
-    px = np.polyfit(t_proj, data[:,0], deg)
-    py = np.polyfit(t_proj, data[:,1], deg)
+    t_proj = u[allcells_new_order] 
+   
+    # fit separate polynomials for each dimension on t
+    polynomials = []
+    for dim in range(n_dims):
+        p = np.polyfit(t_proj, data[:,dim], deg)
+        polynomials.append(p)
     
     return {
         'data': data,
         'order': allcells_new_order,
         't_proj': t_proj,
-        'polynomials': (px, py)
+        'polynomials': polynomials,
+        'n_dims': n_dims
     }
-
 
 
 def calculate_projection_scores(trajectory_info, n_points=1000, use_optimizer=False):
@@ -64,12 +66,9 @@ def calculate_projection_scores(trajectory_info, n_points=1000, use_optimizer=Fa
     Parameters
     ----------
     trajectory_info : dict
-        Output from fit_trajectory_curve, must contain
-          - 'data': shape (N,2) array of (x,y)
-          - 't_proj': shape (N,) original pseudotimes
-          - 'polynomials': tuple(px, py) of poly coefficients
+        Output from fit_trajectory_curve
     n_points : int
-        Number of points for dense sampling (if use_optimizer=False)
+        Number of points for dense sampling
     use_optimizer : bool
         If True, use minimize_scalar per point; otherwise do grid‐search.
     
@@ -77,45 +76,126 @@ def calculate_projection_scores(trajectory_info, n_points=1000, use_optimizer=Fa
     -------
     dict with keys
       - 'scores': array (N,) of normalized [0,1] positions
-      - 'fitted_curve': (x_poly, y_poly) arrays of the dense curve
-      - 't_opt': array (N,) of optimal t’s for each point
+      - 'fitted_curve': list of arrays with coordinates for each dimension
+      - 't_opt': array (N,) of optimal t's for each point
       - 't_grid': the t_lin grid used for sampling
+      - 'min_d2': minimum squared distances
     """
-    data   = trajectory_info['data']
+    data = trajectory_info['data']
     t_proj = trajectory_info['t_proj']
-    px, py = trajectory_info['polynomials']
+    polynomials = trajectory_info['polynomials']
+    n_dims = trajectory_info.get('n_dims', len(polynomials))
     
-    # dense sampling for plotting (and grid-based fallback)
     t_min, t_max = t_proj.min(), t_proj.max()
     t_lin = np.linspace(t_min, t_max, n_points)
-    x_poly = np.polyval(px, t_lin)
-    y_poly = np.polyval(py, t_lin)
     
-    # prepare polynomial evaluation functions
-    def xfun(t): return np.polyval(px, t)
-    def yfun(t): return np.polyval(py, t)
+    # Create fitted curve points for each dimension
+    fitted_curve = []
+    for p in polynomials:
+        fitted_curve.append(np.polyval(p, t_lin))
+    
+    # prepare polynomial evaluation functions for each dimension
+    def dim_func(t, dim):
+        return np.polyval(polynomials[dim], t)
     
     N = data.shape[0]
-    t_opt = np.empty(N, dtype=float)
-    d2_min  = np.empty(N, dtype=float)
+    curve_pts = np.vstack(fitted_curve).T        # shape (n_points, 2)
+    # compute squared distances between each cell and each sampled curve-point
+    d2 = ((data[:, None, :] - curve_pts[None, :, :])**2).sum(axis=2)   # size is N x neighbors
+    best_idx = np.argmin(d2, axis=1)             # for each cell, index into t_lin
+    t_opt    = t_lin[best_idx]
+    scores_0_1   = (t_opt - t_min) / (t_max - t_min)
 
-    # use bounded scalar minimization for each point
-    for i in range(N):
-        xi, yi = data[i,0], data[i,1]
-        # objective: squared distance
-        fun = lambda t: (xfun(t)-xi)**2 + (yfun(t)-yi)**2
-        res = minimize_scalar(fun,
-#                               bounds=(t_min, t_max),
-#                               method='bounded',
-                              options={'xatol':1e-4})
-        t_opt[i] = res.x
-        d2_min[i] = res.fun
-    scores_0_1 = (t_opt - t_min) / (t_max - t_min)
-    
+
     return {
         'scores': scores_0_1,
-        'fitted_curve': (x_poly, y_poly),
+        'fitted_curve': fitted_curve,
         't_opt': t_opt,
         't_grid': t_lin,
-        'min_d2':d2_min
+        'min_d2': np.min(d2,axis = 1)
     }
+
+
+def plot_trajectory_3d(trajectory, projections, adata=None, figsize=(10, 8), elev=30, azim=45):
+    """
+    Creates an interactive 3D plot of trajectory data with the first 3 PCs.
+    
+    Parameters
+    ----------
+    trajectory : dict
+        Output from fit_trajectory_curve
+    projections : dict
+        Output from calculate_projection_scores
+    adata : AnnData, optional
+        Original AnnData object. If provided, uses this instead of trajectory data
+    figsize : tuple, default=(10, 8)
+        Figure size (width, height)
+    elev : float, default=30
+        Elevation angle in degrees (vertical rotation)
+    azim : float, default=45
+        Azimuth angle in degrees (horizontal rotation)
+        
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure object containing the 3D plot
+    """
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+    import numpy as np
+
+    if adata is not None:
+        data = adata.obsm['X_pca'][trajectory['order'], :3]
+    else:
+        data = trajectory['data'][:, :3]
+    
+    scores       = projections['scores']
+    fitted_curve = projections['fitted_curve']
+    
+    # Create 3D plot
+    fig = plt.figure(figsize=figsize)
+    ax  = fig.add_subplot(111, projection='3d')
+    
+    # Scatter (low zorder)
+    scatter = ax.scatter(
+        data[:,0], data[:,1], data[:,2],
+        c=scores, cmap='PiYG',
+        s=30, edgecolor='k', linewidth=0.2,
+        alpha=0.7, zorder=1
+    )
+    cbar = fig.colorbar(scatter, ax=ax, pad=0.1, shrink=0.2)
+    cbar.set_label('Pseudocluster', fontsize=14)
+    
+    # Trajectory line (high zorder)
+    if len(fitted_curve) >= 3:
+        line = ax.plot(
+            fitted_curve[0], fitted_curve[1], fitted_curve[2],
+            'r-', linewidth=5, label='Fitted trajectory',
+            zorder=10
+        )[0]
+        # line.set_depthshade(False)
+    
+    # Remove ticks
+    ax.set_xticks([]); ax.set_yticks([]); ax.set_zticks([])
+    
+    # Bigger labels + extra pad on z
+    ax.set_xlabel('PC1', fontsize=16, labelpad=2)
+    ax.set_ylabel('PC2', fontsize=16, labelpad=2)
+    ax.set_zlabel('PC3', fontsize=16, labelpad=1)
+    ax.set_title('Pseudoclusters in PCA (3d)', fontsize=18)
+    
+    # Equal axis scaling
+    try:
+        ax.set_box_aspect([1, 1, 1])
+    except AttributeError:
+        max_range = np.ptp(data, axis=0).max() / 2.0
+        mid = data.mean(axis=0)
+        ax.set_xlim(mid[0] - max_range, mid[0] + max_range)
+        ax.set_ylim(mid[1] - max_range, mid[1] + max_range)
+        ax.set_zlim(mid[2] - max_range, mid[2] + max_range)
+    
+    ax.grid(True)
+    ax.view_init(elev=elev, azim=azim)
+
+    # tighten but leave 5% on the right for the z-label
+    plt.tight_layout(rect=[0, 0, 0.95, 1.0])
+    return fig
