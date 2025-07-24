@@ -1,0 +1,68 @@
+# Data files
+*.h5ad
+*.h5
+*.csv
+*.tsv
+*.pkl
+*.npz
+*.npy
+*.mtx
+*.zarr
+
+# Images and figures
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.pdf
+*.eps
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.env
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Custom directories (add paths to any large data directories)
+/data/
+/output/figures/
+
+
+# Test files that should not be committed
+test_basic.py
+test_notebooks.py
