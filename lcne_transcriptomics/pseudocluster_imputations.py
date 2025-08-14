@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
-from . import processing
+import processing
 import pandas as pd 
 
 
@@ -48,18 +48,11 @@ def bootstrap_ci_for_cell(x_vals, weights, n_boot=500, alpha=0.05, random_state=
     return lower, upper
 
 
-
-def impute_pseudocluster(adata_query, adata_ref, k=10,
-                          n_null=1000, per_cell_null=False,
-                          do_bootstrap=True, n_boot=500,
-                          epsilon=1e-10):
-    """
-    Impute pseudocluster and compute confidence metrics.
-    per_cell_null: if True, build a null per query cell;
-                   if False, use group-level null.
-    do_bootstrap:   if True, compute bootstrap CIs for each cell"""
-
-    arc_path = '/home/shuonan.chen/scratch_shuonan/scripts/LC_NE_dataintegration/snRNAseq_only/cellID_pc_0722.csv'
+def impute_pseudocluster(adata_query, adata_ref, pc_dir,
+                         k=10, n_null=1000, per_cell_null=False,
+                         do_bootstrap=True, n_boot=500,
+                         epsilon=1e-10, weighted=True):
+    arc_path = pc_dir+'/cellID_pc_0722.csv'
     arcinfo = pd.read_csv(arc_path)
     assert (adata_ref.obs.index == arcinfo['cellID']).all()
 
@@ -67,30 +60,28 @@ def impute_pseudocluster(adata_query, adata_ref, k=10,
     print(f'using {len(common)} genes to run the imputations!')
     adata_ref = adata_ref[:, common].copy()
 
-    # Extract and normalize
     X_ref = adata_ref[:, common].X
     X_q = adata_query[:, common].X
     X_ref_norm = processing.rankrows(X_ref, standardize=True)
     X_q_norm = processing.rankrows(X_q, standardize=True)
 
-    # k-NN search
     nbrs = NearestNeighbors(n_neighbors=k, metric='euclidean').fit(X_ref_norm)
     distances, indices = nbrs.kneighbors(X_q_norm)
 
-    # Weights for imputation
     weights = 1.0 / (distances + epsilon)
     weights /= weights.sum(axis=1, keepdims=True)
 
-    # Impute pseudocluster values
     imputed = np.zeros(adata_query.n_obs)
+    pc_std = np.zeros(adata_query.n_obs)
     for i in range(adata_query.n_obs):
-        vals = arcinfo['pseudoclusters'].iloc[indices[i]].values
-        imputed[i] = np.dot(weights[i], vals)
+        vals = arcinfo['pseudoclusters'].iloc[indices[i]].values.astype(float)
+        w = weights[i] if weighted else np.full_like(weights[i], 1.0 / len(weights[i]))
+        mu = np.dot(w, vals)
+        imputed[i] = mu
+        pc_std[i] = np.sqrt(np.sum(w * (vals - mu) ** 2))
 
-    # Mean NN distance per cell
     mean_nn = distances.mean(axis=1)
 
-    # Null distribution and p-scores
     if per_cell_null:
         null_medians = np.zeros_like(mean_nn)
         pscores = np.zeros_like(mean_nn)
@@ -107,22 +98,22 @@ def impute_pseudocluster(adata_query, adata_ref, k=10,
         null_medians = np.full_like(mean_nn, baseline_med)
         pscores = (d_rand[:, None] > mean_nn[None, :]).mean(axis=0)
 
-    # Bootstrap CIs (optional)
     ci_lower = None
     ci_upper = None
     if do_bootstrap:
         ci_lower = np.zeros(len(imputed))
         ci_upper = np.zeros(len(imputed))
         for i in range(len(imputed)):
-            vals = arcinfo['pseudoclusters'].iloc[indices[i]].values
+            vals = arcinfo['pseudoclusters'].iloc[indices[i]].values.astype(float)
+            w = weights[i] if weighted else np.full_like(weights[i], 1.0 / len(weights[i]))
             ci_lower[i], ci_upper[i] = bootstrap_ci_for_cell(
-                vals, weights[i], n_boot=n_boot, alpha=0.05, random_state=100 + i
+                vals, w, n_boot=n_boot, alpha=0.05, random_state=100 + i
             )
-    
+
     conf_dict = {
         'conf_power': pscores,
         'ci_lower': ci_lower,
-        'ci_upper': ci_upper
+        'ci_upper': ci_upper,
+        'pc_std': pc_std
     }
     return imputed, conf_dict
-

@@ -4,7 +4,7 @@ import anndata
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import rankdata
-from . import processing
+import processing
 
 def compute_baseline_distance_between(X1, X2, n_pairs=3000, random_state=0):
     np.random.seed(random_state)

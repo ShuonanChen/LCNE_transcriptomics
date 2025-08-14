@@ -1,19 +1,19 @@
 import trimesh    
 import numpy as np
 
-def load_sym_mesh():
+def load_sym_mesh(meshhome):
     """
     Load three mesh objects for LC, CD and CV.
     """
-    mesh_LC = trimesh.load_mesh("/allen/aind/scratch/shuonan.chen/scripts/Pons_MERFISH/mesh/LC_ccf_v1_250102 2.obj")
-    mesh_CD = trimesh.load_mesh("/allen/aind/scratch/shuonan.chen/scripts/Pons_MERFISH/mesh/subCD_ccf_v1_250102 2.obj")
-    mesh_CV = trimesh.load_mesh("/allen/aind/scratch/shuonan.chen/scripts/Pons_MERFISH/mesh/subCV_ccf_v1_250102 2.obj")
+    mesh_LC = trimesh.load_mesh(meshhome+"/LC_ccf_v1_250102 2.obj")
+    mesh_CD = trimesh.load_mesh(meshhome+"/subCD_ccf_v1_250102 2.obj")
+    mesh_CV = trimesh.load_mesh(meshhome+"/subCV_ccf_v1_250102 2.obj")
     allmeshes = [mesh_LC,mesh_CD,mesh_CV]
     return allmeshes
 
 
 
-def load_mesh(meshhome = "/allen/aind/scratch/shuonan.chen/scripts/Pons_MERFISH/mesh/mesh_v2/",
+def load_mesh(meshhome,
               nameconstrains = '*67*'
              ):
     """

@@ -2,7 +2,7 @@ import pandas as pd
 import anndata
 import numpy as np
 from scipy.stats import rankdata
-from . import utils
+import utils
 
 
 def rankrows(M, standardize = True):
@@ -23,12 +23,12 @@ def flip(a, xm):
         return(2*xm-a)
 
     
-def get_hemi(S_mer, mesh=None):
+def get_hemi(S_mer, meshhome=None):
     '''
     assume the axis of interest are both on the last axis. 
     '''
-    if mesh is None:
-        allmeshes = utils.load_sym_mesh()
+    if meshhome !=None:
+        allmeshes = utils.load_sym_mesh(meshhome)
         mesh = allmeshes[-1]
     xm = np.min(mesh.vertices[:,-1]) + np.ptp(mesh.vertices[:,-1])/2 # this is the center line to indicate the hemisphere 
     new_coords = S_mer.copy()

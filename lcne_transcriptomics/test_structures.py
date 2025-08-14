@@ -15,6 +15,8 @@ def compare_permuted_pca_cumulative(
     cmap_original='tab10',
     cmap_perm='Set2'
 ):
+    assert use_highly_variable==False, "not accepting using HVGs for now, set it to false!"
+    
     """
     1) Plot original vs permuted cumulative explained variance.
     2) Show PC1–PC2 scatter of the real data plus `n_examples` permuted runs.
@@ -25,10 +27,8 @@ def compare_permuted_pca_cumulative(
     fig_pca, axes_pca : Figure/Axis array for PC1–PC2 scatters
     """
     rng = np.random.default_rng(seed)
-
     # -- Real PCA --
-    sc.tl.pca(adata, n_comps=n_pcs, svd_solver='arpack',
-              use_highly_variable=use_highly_variable)
+    sc.tl.pca(adata, n_comps=n_pcs, svd_solver='arpack')
     orig_vr  = adata.uns['pca']['variance_ratio']
     orig_cum = np.cumsum(orig_vr)
     orig_pca = adata.obsm['X_pca'][:, :2]  # first two PCs
@@ -47,7 +47,7 @@ def compare_permuted_pca_cumulative(
         ad.X = X
 
         # PCA
-        sc.tl.pca(ad, n_comps=n_pcs, svd_solver='arpack',use_highly_variable=False)
+        sc.tl.pca(ad, n_comps=n_pcs, svd_solver='arpack')
         perm_vr = ad.uns['pca']['variance_ratio']
         perm_cums.append(np.cumsum(perm_vr))
 
@@ -118,6 +118,7 @@ def compare_permuted_pca_cumulative(
 
 def plot_pca_hvg_variation(
     adata,  
+    cpm_scl,
     hvg_counts=[500, 1000, 2000, 5000],
     flavor='seurat_v3',
     pca_solver='arpack',
@@ -132,7 +133,7 @@ def plot_pca_hvg_variation(
     Parameters
     ----------
     adata : AnnData
-        Your full dataset. this should be before you running z-score normalization. in our case its adata_BN
+        Your full dataset. this should be before you running z-score normalization. in our case its adata_BN (sample sum is 1)
     hvg_counts : list of int
         Numbers of HVGs to try.
     flavor : str
@@ -146,10 +147,15 @@ def plot_pca_hvg_variation(
         scatter_kwargs = dict(s=5, alpha=0.7)
     n_plots = len(hvg_counts)
     fig, axes = plt.subplots(1, n_plots, figsize=(5*n_plots, 5), squeeze=False)
-    
+
+
+    adata_cpm = adata.copy()
+    adata_cpm.X*=cpm_scl
+    adata_cpm.X = np.around(adata_cpm.X)
+
     for ax, n_hvg in zip(axes[0], hvg_counts):
         # 1) copy and select HVGs
-        ad = adata.copy()
+        ad = adata_cpm.copy()
         sc.pp.highly_variable_genes(ad, 
                                     n_top_genes=n_hvg, 
                                     flavor=flavor,
@@ -160,8 +166,7 @@ def plot_pca_hvg_variation(
         # 2) compute PCA (2 PCs)        
         sc.tl.pca(ad, 
                   n_comps=2, 
-                  svd_solver=pca_solver, 
-                  use_highly_variable=False)
+                  svd_solver=pca_solver)
         
         # 3) scatter PC1 vs PC2
         pcs = ad.obsm['X_pca']  # shape (cells,2)
