@@ -17,11 +17,17 @@ SNRNA_DATA_DIR = os.path.join(DATA_DIR, "snRNA")
 MERFISH_DATA_DIR = os.path.join(DATA_DIR, "merfish")
 RETROSEQ_DATA_DIR = os.path.join(DATA_DIR, "retroseq")
 MESH_DIR = os.path.join(DATA_DIR, "mesh")
+TMP_OUT_DIR = OUTPUT_DIR
 
 # Output directories for figures
 SNRNA_FIGURE_DIR = os.path.join(FIGURE_DIR, "snRNA")
 MERFISH_FIGURE_DIR = os.path.join(FIGURE_DIR, "merfish")
 RETROSEQ_FIGURE_DIR = os.path.join(FIGURE_DIR, "retroseq")
+
+# CPM default set to be 1e4 for now. (so count per 10k really)
+CPM_SCL = 1e4
+
+CMAP_NAME = 'PiYG'  # used for the pseudocluster only for now!
 
 # Create necessary directories
 for directory in [DATA_DIR, OUTPUT_DIR, FIGURE_DIR, 
@@ -31,7 +37,7 @@ for directory in [DATA_DIR, OUTPUT_DIR, FIGURE_DIR,
 
 # ============= PLOT CONFIGURATION =============
 # Default font path (modify as needed)
-FONT_PATH = '/home/shuonan.chen/miniconda3/envs/allensdk/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/ttf/Helvetica.ttc'
+FONT_PATH = PROJECT_ROOT+'/fonts/Helvetica.ttc'
 
 def configure_matplotlib():
     """Configure matplotlib for publication-quality figures"""
