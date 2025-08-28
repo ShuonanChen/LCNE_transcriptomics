@@ -6,7 +6,8 @@ from sklearn.manifold import Isomap
 
 def get_arbitrary_orders(adata_sc):
     '''
-    for now we will use 2d umap and fit a line. 
+    for now we will use 2d umap and fit a line. (todo: fit 1d umap and use that)
+    this doesn not return the order but some number (that is further used to order the cells)
     '''
     umapdata = adata_sc.obsm['X_umap'][:,:2]
     Xc = umapdata - umapdata.mean(axis=0)   # centered data
@@ -18,8 +19,6 @@ def get_arbitrary_orders(adata_sc):
 def fit_trajectory_curve(adata_sc, deg=3, n_dims=2):
     """
     Fits a polynomial curve to the PCA data using Isomap for dimensionality reduction.
-    
-    Parameters:
     -----------
     adata_sc : AnnData object
         Input single-cell data with PCA coordinates
@@ -28,25 +27,23 @@ def fit_trajectory_curve(adata_sc, deg=3, n_dims=2):
         Number of PCA dimensions to use
     deg : int, default=3 (shoudl not be changed..)
         Degree of polynomial fit
-        
-    Returns:
     --------
     dict
         Contains trajectory information:
         - 'order': indices of cells in trajectory order
         - 't_proj': projection coordinates
-        - 'polynomials': tuple of polynomial coefficients (px, py)
+        - 'polynomials': tuple of polynomial coefficients 
     """
     pca_data = adata_sc.obsm['X_pca'][:,:n_dims]
-    u = get_arbitrary_orders(adata_sc)
-    allcells_new_order = np.argsort(u)
-    data = pca_data[allcells_new_order]
-    t_proj = u[allcells_new_order] 
+    u = get_arbitrary_orders(adata_sc)  # u is some arbitrary vlaues (not the order)
+    allcells_new_order = np.argsort(u) # order this arbitrary values
+    data = pca_data[allcells_new_order] # re-rodered PCA 
+    t_proj = u[allcells_new_order]  # re-ordered arbitrary values. for now. not hte final output score. 
    
     # fit separate polynomials for each dimension on t
     polynomials = []
     for dim in range(n_dims):
-        p = np.polyfit(t_proj, data[:,dim], deg)
+        p = np.polyfit(t_proj, data[:,dim], deg) 
         polynomials.append(p)
     
     return {
@@ -62,18 +59,15 @@ def calculate_projection_scores(trajectory_info, n_points=1000, use_optimizer=Fa
     """
     Calculates projection scores and fitted curve coordinates, optionally
     optimizing each projection with a continuous minimizer.
-    
-    Parameters
-    ----------
+    ----------Parameters
     trajectory_info : dict
         Output from fit_trajectory_curve
     n_points : int
         Number of points for dense sampling
     use_optimizer : bool
         If True, use minimize_scalar per point; otherwise do grid‐search.
-    
-    Returns
-    -------
+
+    ------- return
     dict with keys
       - 'scores': array (N,) of normalized [0,1] positions
       - 'fitted_curve': list of arrays with coordinates for each dimension
@@ -86,8 +80,8 @@ def calculate_projection_scores(trajectory_info, n_points=1000, use_optimizer=Fa
     polynomials = trajectory_info['polynomials']
     n_dims = trajectory_info.get('n_dims', len(polynomials))
     
-    t_min, t_max = t_proj.min(), t_proj.max()
-    t_lin = np.linspace(t_min, t_max, n_points)
+    t_min, t_max = t_proj.min(), t_proj.max() # still this is some arbitrary values.
+    t_lin = np.linspace(t_min, t_max, n_points) # split into many points in this range. 
     
     # Create fitted curve points for each dimension
     fitted_curve = []
@@ -105,7 +99,6 @@ def calculate_projection_scores(trajectory_info, n_points=1000, use_optimizer=Fa
     best_idx = np.argmin(d2, axis=1)             # for each cell, index into t_lin
     t_opt    = t_lin[best_idx]
     scores_0_1   = (t_opt - t_min) / (t_max - t_min)
-
 
     return {
         'scores': scores_0_1,
