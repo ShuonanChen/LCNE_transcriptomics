@@ -26,7 +26,7 @@ def draw_scale_bar(ax, length_px, px_to_mm=25*1e-3, loc=(0.1, 0.05), linewidth=4
             f'{length_px * px_to_mm:.1f} mm',ha='center', va='bottom')
 
     
-def plot_mesh(ax: Any, allmeshes, 
+def plot_mesh_old(ax: Any, allmeshes, 
               direction: str = 'c', 
              meshcol = 'lightgray') -> None:
     """
@@ -46,6 +46,29 @@ def plot_mesh(ax: Any, allmeshes,
         print('wrong mesh input') 
     
     ax.invert_yaxis()
+
+
+
+def plot_mesh(ax: Any, allmeshes, direction: str = 'c', 
+             meshcol = 'lightgray') -> None:
+    """
+    this is folloing drews capsule `LC_mesh_from_Cajal_points` notebook num 10
+    parameter direction: select index to choose coordinate ('c' uses index 2, otherwise index 0)
+    allmeshes is a dictionary now
+    """
+    import trimesh
+    ax.set_aspect('equal')
+    i = 2 if direction == 'c' else 0
+    if isinstance(allmeshes, dict):  #, trimesh.Trimesh
+        for k,mesh in allmeshes.items():
+            ax.scatter(mesh.vertices.T[i], mesh.vertices.T[1], c='gray', s=1, alpha=0.05)
+            # ax.triplot(mesh.vertices.T[i], mesh.vertices.T[1], mesh.faces, alpha=0.4, label=k, color =meshcol)
+    elif isinstance(allmeshes, trimesh.Trimesh):
+        # ax.triplot(allmeshes.vertices.T[i], allmeshes.vertices.T[1], allmeshes.faces, alpha=0.4, color =meshcol)
+        ax.scatter(allmeshes.vertices.T[i], allmeshes.vertices.T[1], c='gray', s=1, alpha=0.05)
+    else:
+        print('wrong mesh input')     
+    ax.invert_yaxis()    
     
 from sklearn.preprocessing import LabelEncoder
 
@@ -141,17 +164,18 @@ def plot_spatial(ax,
 
 
 
-def scatter_with_jitter(ax, S, cvals, s=10, scl_jitter=0.01, cmap='viridis', direction = 'c',
-                        edgecolor='black', lw=0.01, ascending=False):
+def scatter_with_jitter(ax, S, cvals, s=10, scl_jitter=0.1, cmap='viridis', direction = 'c',
+                        edgecolor='black', lw=0.01, ascending=False, rand_seed=888):
     import numpy as np
     i = 2 if direction == 'c' else 0
-    order = np.argsort(cvals) if ascending else np.argsort(cvals)[::-1]
+    order = np.argsort(cvals) if ascending else range(len(cvals))
     x = S[order, i]
     y = S[order, 1]
     cvals = np.array(cvals)[order]
 
     jitter_scale_x = scl_jitter * (x.max() - x.min())
     jitter_scale_y = scl_jitter * (y.max() - y.min())
+    np.random.seed(rand_seed)
     x_jit = x + np.random.uniform(-jitter_scale_x, jitter_scale_x, size=len(x))
     y_jit = y + np.random.uniform(-jitter_scale_y, jitter_scale_y, size=len(y))
 
