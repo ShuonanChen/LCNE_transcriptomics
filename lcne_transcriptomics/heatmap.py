@@ -59,19 +59,18 @@ def reorder_genes(reduced):
 
 
 
-def get_final_heatmap(inputheatmap):
+def get_final_heatmap(inputheatmap, gene_reorder = True):
     '''
     inputheatmap: 
         should be G x N (but N needs to be ordered to a certain way. this will not change) 
         eg: adata[:,allyourgenes].X[trajectory['order']].copy()[np.argsort(cellscores)].T
-        
+    output `ordered_data` will be G x N (same) 
     '''
     reduced = downsample_moving_avg(inputheatmap, n_out=50) # (G, n_out)
     reduced = scaling(reduced)
-    ordered_data, row_order = reorder_genes(reduced)
+    if gene_reorder:
+        ordered_data, row_order = reorder_genes(reduced)
+    else: 
+        row_order=  np.arange(len(reduced))
+        ordered_data = reduced.copy()
     return(ordered_data, row_order)
-    
-    
-    
-    
-    
