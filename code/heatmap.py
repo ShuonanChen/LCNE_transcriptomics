@@ -57,8 +57,6 @@ def reorder_genes(reduced):
     ordered_data = reduced[row_order]
     return(ordered_data,row_order)
 
-
-
 def get_final_heatmap(inputheatmap, gene_reorder = True):
     '''
     inputheatmap: 

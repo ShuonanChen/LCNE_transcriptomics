@@ -4,6 +4,7 @@ import numpy as np
 def load_sym_mesh(meshhome):
     """
     Load three mesh objects for LC, CD and CV.
+    meshhome
     """
     mesh_LC = trimesh.load_mesh(meshhome+"/LC_ccf_v1_250102 2.obj")
     mesh_CD = trimesh.load_mesh(meshhome+"/subCD_ccf_v1_250102 2.obj")
