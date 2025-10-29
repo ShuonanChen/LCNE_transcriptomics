@@ -55,3 +55,23 @@ def normalize_cols(M, ranked=True):
     stds[stds == 0] = 1e-10
     result = (result - means) / stds
     return result
+
+
+
+def jitterspots(allspots, scl_jitter=0.05, rand_seed = 888):
+    '''
+    allspots are expected to be 3d spots 
+    '''
+    x = allspots[:,0]
+    y = allspots[:,1]
+    z = allspots[:,2]
+    jitter_scale_x = scl_jitter * (x.max() - x.min())
+    jitter_scale_y = scl_jitter * (y.max() - y.min())
+    jitter_scale_z = scl_jitter * (z.max() - z.min())
+    
+    np.random.seed(rand_seed)
+    x_jit = x + np.random.uniform(-jitter_scale_x, jitter_scale_x, size=len(x))
+    y_jit = y + np.random.uniform(-jitter_scale_y, jitter_scale_y, size=len(y))
+    z_jit = z + np.random.uniform(-jitter_scale_z, jitter_scale_z, size=len(z))
+
+    return(np.c_[x_jit,y_jit,z_jit])
