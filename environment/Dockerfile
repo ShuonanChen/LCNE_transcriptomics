@@ -10,6 +10,7 @@ RUN conda install -y \
         jupyter==1.1.1 \
         scanpy==1.11.3 \
         scvi-tools==1.3.3 \
+        scikit-misc==0.5.1 \
     && conda clean -ya
 
 ADD "https://github.com/coder/code-server/releases/download/v4.100.3/code-server-4.100.3-linux-amd64.tar.gz" /.code-server/code-server.tar.gz
