@@ -1,11 +1,17 @@
 # config.py
-import os
+import os, sys
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 
 # ============= PATH CONFIGURATION =============
 # Get project root directory (assuming config.py is in lcne_transcriptomics/notebooks/)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Add the code directory to Python path so modules can be imported
+CODE_DIR = os.path.join(PROJECT_ROOT, "code")
+if CODE_DIR not in sys.path:
+    sys.path.insert(0, CODE_DIR)
+
 
 # Define standard paths
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -24,8 +30,9 @@ SNRNA_FIGURE_DIR = os.path.join(FIGURE_DIR, "snRNA")
 MERFISH_FIGURE_DIR = os.path.join(FIGURE_DIR, "merfish")
 RETROSEQ_FIGURE_DIR = os.path.join(FIGURE_DIR, "retroseq")
 
-# CPM default set to be 1e4 for now. (so count per 10k really)
-CPM_SCL = 1e4
+# lets use actual CPM 
+# CPM_SCL = 1e4 # CPM default set to be 1e4 for now. (so count per 10k really)
+CPM_SCL = 1e6
 
 CMAP_NAME = 'PiYG'  # used for the pseudocluster only for now!
 
@@ -37,7 +44,8 @@ for directory in [DATA_DIR, OUTPUT_DIR, FIGURE_DIR,
 
 # ============= PLOT CONFIGURATION =============
 # Default font path (modify as needed)
-FONT_PATH = PROJECT_ROOT+'/fonts/Helvetica.ttc'
+FONT_PATH = os.path.join(PROJECT_ROOT, 'fonts', 'Helvetica.ttc')
+
 
 def configure_matplotlib():
     """Configure matplotlib for publication-quality figures"""
@@ -92,3 +100,10 @@ def save_figure(filename, dir_path=FIGURE_DIR, formats=["svg", "png"], dpi=300):
 # ============= PROJECT CONSTANTS =============
 # Add any project-specific constants here
 RANDOM_SEED = 42
+
+
+# Print debug information
+print(f"PROJECT_ROOT: {PROJECT_ROOT}")
+print(f"CODE_DIR: {CODE_DIR}")
+print(f"CODE_DIR exists: {os.path.exists(CODE_DIR)}")
+print(f"Python path includes CODE_DIR: {CODE_DIR in sys.path}")
