@@ -66,3 +66,4 @@ venv.bak/
 # Test files that should not be committed
 test_basic.py
 test_notebooks.py
+.vscode
