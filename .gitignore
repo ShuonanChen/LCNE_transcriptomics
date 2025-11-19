@@ -67,3 +67,6 @@ venv.bak/
 test_basic.py
 test_notebooks.py
 .vscode
+
+# Scratch notebooks
+**/scratch_*.ipynb
