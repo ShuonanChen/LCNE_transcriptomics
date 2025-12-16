@@ -52,6 +52,23 @@ def bootstrap_ci_for_cell(x_vals, weights, n_boot=500, alpha=0.05, random_state=
 
 
 
+def weight_inverse_dst(distances,epsilon = 1e-10):
+    ''' get the weight as the inverse distance 
+    '''
+    weight1 = 1 / (distances + epsilon)
+    weight1 = weight1 / weight1.sum(axis=1, keepdims=True)
+    return(weight1)
+
+def weight_softmax_dst(distances, tau = 0.1):
+    ''' get the weight as softmax distance
+    '''
+    z = -distances / tau
+    z = z - z.max(axis=1, keepdims=True) # now max is 0, everything is nonpositive
+    weight2 = np.exp(z)
+    weight2 = weight2 / weight2.sum(axis=1, keepdims=True)
+    return(weight2)
+
+
 
 
 def impute_mer_data(adata_sc, adata_mer, k=10, n_hvg=1000, n_holdoff_genes = 0, random_state = 111):
