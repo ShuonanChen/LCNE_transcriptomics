@@ -1,5 +1,5 @@
 import numpy as np
-
+import matplotlib.pyplot as plt
 import scanpy as sc
 
 
@@ -96,29 +96,97 @@ def DE_scanpy(adata_retro_BN,
 
 
 ###### scvi ######
+class ScviDEOutput(dict):
+    """
+    Dict-like: keys = group, values = list of top genes
+    Also stores full DE tables and can plot a heatmap of lfc_mean.
+    """
+    def __init__(self, genes_dict, de_results, groupby_col, global_LFC_scvi, n_genes):
+        super().__init__(genes_dict)
+        self.de_results = de_results
+        self.groupby_col = groupby_col
+        self.global_LFC_scvi = global_LFC_scvi
+        self.n_genes = n_genes
+
+    def _default_groups(self):
+        return list(self.de_results.keys())
+
+    def _default_finalist_genes(self, groups):
+        seen, out = set(), []
+        for g in groups:
+            for gene in self.get(g, []):
+                if gene not in seen:
+                    seen.add(gene)
+                    out.append(gene)
+        return out
+
+    def plotheatmap(self, groups=None, finalist_genes=None, value_col="lfc_mean",
+                    cmap="bwr", figsize=None, title=None, vlim=None):
+        if groups is None:
+            groups = self._default_groups()
+        if finalist_genes is None:
+            finalist_genes = self._default_finalist_genes(groups)
+
+        expr_matrix = np.zeros((len(groups), len(finalist_genes)), dtype=float)
+        for i, group in enumerate(groups):
+            df = self.de_results[group]
+            for j, gene in enumerate(finalist_genes):
+                if gene in df.index:
+                    expr_matrix[i, j] = float(df.loc[gene, value_col])
+
+        if vlim is None:
+            vmax = np.abs(expr_matrix).max()
+            vmin = -vmax
+        else:
+            vmin, vmax = vlim
+
+        if figsize is None:
+            figsize = (max(5, 0.25 * len(finalist_genes)), max(2, 0.35 * len(groups)))
+
+        fig, ax = plt.subplots(figsize=figsize)
+        im = ax.imshow(expr_matrix, cmap=cmap, aspect="auto", vmin=vmin, vmax=vmax)
+
+        ax.set_xticks(range(len(finalist_genes)))
+        ax.set_xticklabels(finalist_genes, rotation=90)
+        ax.set_yticks(range(len(groups)))
+        ax.set_yticklabels(groups)
+
+        cbar = plt.colorbar(im, ax=ax)
+        cbar.set_label(value_col)
+
+        if title is None:
+            title = f"DE genes heatmap ({value_col}; LFC ≥ {self.global_LFC_scvi})"
+        ax.set_title(title)
+
+#         plt.tight_layout()
+#         plt.show()
+        return ax
+
+
 def DE_scvi(adata_retro, model, global_LFC_scvi, n_genes):
-    groupby_col = 'injection_site'
+    groupby_col = "injection_site"
     scvi_de_results = {}
     categories = adata_retro.obs[groupby_col].cat.categories
+
     for category in categories:
-        if category != 'nan':  # Skip thatlmus
+        if category != "nan":
             cell_idx_A = adata_retro.obs[groupby_col] == category
             cell_idx_B = adata_retro.obs[groupby_col] != category
-            de_result_full = model.differential_expression(idx1=cell_idx_A, idx2=cell_idx_B, mode='change')
-            problematic_mask = (de_result_full.index.str.startswith("Gm") | de_result_full.index.str.endswith("Rik") )#|
-    #             de_result_full.index.str.startswith("CN"))            
-            de_result_filtered = de_result_full.loc[~problematic_mask]            
+            de_result_full = model.differential_expression(idx1=cell_idx_A, idx2=cell_idx_B, mode="change")
+            problematic_mask = (de_result_full.index.str.startswith("Gm") | de_result_full.index.str.endswith("Rik"))
+            de_result_filtered = de_result_full.loc[~problematic_mask]
             scvi_de_results[category] = de_result_filtered
 
-    top_genes_dict_scvi = {}    
-    for group, df in scvi_de_results.items():        
-        df_filt = df[df['lfc_mean'] >= global_LFC_scvi]
-        df_sorted = df_filt.sort_values('bayes_factor', ascending=False)
-        top_genes = df_sorted.index.tolist()[:n_genes]
-        problematic = [g for g in top_genes if any(x in g for x in ['Gm', 'Rik'])]
-        top_genes_dict_scvi[group] = top_genes        
-    scvi_genes= top_genes_dict_scvi.copy()
-    return(scvi_genes)
-    
+    top_genes_dict_scvi = {}
+    for group, df in scvi_de_results.items():
+        df_filt = df[df["lfc_mean"] >= global_LFC_scvi]
+        df_sorted = df_filt.sort_values("bayes_factor", ascending=False)
+        top_genes_dict_scvi[group] = df_sorted.index.tolist()[:n_genes]
 
-   
+    return ScviDEOutput(
+        genes_dict=top_genes_dict_scvi,
+        de_results=scvi_de_results,
+        groupby_col=groupby_col,
+        global_LFC_scvi=global_LFC_scvi,
+        n_genes=n_genes,
+    )
