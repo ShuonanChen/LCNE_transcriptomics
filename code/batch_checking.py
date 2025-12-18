@@ -14,14 +14,11 @@ def create_projection_subsets(adata, groupby_col='injection_site'):
     group_names = adata.obs[groupby_col].unique()    
     for group in group_names:
         adata_subset = adata[adata.obs[groupby_col] == group].copy()
-        
-        # Standard preprocessing
         sc.pp.normalize_total(adata_subset, target_sum=1e6)
         sc.pp.log1p(adata_subset)
         sc.pp.scale(adata_subset, zero_center=True, max_value=10)
         sc.tl.pca(adata_subset, n_comps=50, svd_solver='arpack')
         sc.pp.neighbors(adata_subset, use_rep='X_pca')
-        
         adata_dict[group] = adata_subset
         print(f"{group}: {adata_subset.shape}")
     
@@ -30,13 +27,11 @@ def create_projection_subsets(adata, groupby_col='injection_site'):
 def plot_batch_effects(adata_dict, color_vars=["external_donor_name", "gender", 'total_counts']):
     """Plot UMAP colored by batch variables for each subset"""
     for group_name, adata_subset in adata_dict.items():
-        print(f"\n{group_name}")
         sc.tl.umap(adata_subset, random_state=210)
         ax = sc.pl.umap(adata_subset, color=color_vars, ncols=3, show=False)
         for a in ax:
             a.set_aspect('equal')
         plt.tight_layout()
-        plt.show()
 
 def preprocess_full_dataset(adata):
     """Preprocess the full dataset for batch analysis"""
@@ -103,40 +98,3 @@ def plot_rf_results(results, title_suffix=""):
     plt.title(f"Batch Effect Detection with Random Forest{title_suffix}")
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.show()
-
-def run_comprehensive_batch_analysis(adata):
-    """Run complete batch effect analysis pipeline"""
-    projection_subsets = create_projection_subsets(adata, 'injection_site')
-    print("\n *** batcheffect by mice ID for each projection target ***")
-    plot_batch_effects(projection_subsets, ["external_donor_name", "gender", 'total_counts'])
-    
-    # print("\n3. Creating subsets by gender...")
-    # gender_subsets = create_projection_subsets(adata, 'gender')
-    # print("\n4. Plotting batch effects for each gender...")
-    # plot_batch_effects(gender_subsets, ["external_donor_name", "injection_site", 'total_counts'])
-
-    print("\n*** all the samples - check mice ID batch effect *** ")
-    adata_processed = preprocess_full_dataset(adata)
-    ax = sc.pl.umap(adata_processed, color=["external_donor_name", "gender", 'injection_site', 'total_counts'], 
-                    ncols=2, show=False)
-    for a in ax:
-        a.set_aspect('equal')
-    plt.tight_layout()
-    plt.show()
-
-    print("\n*** Random Forest evaluation (gender and mice ID as outcome) *** ")
-    rf_results = evaluate_batch_effects_rf(adata)
-    plot_rf_results(rf_results, " (Raw Data)")
-    
-    # print("\n7. Random Forest evaluation (PCA + RF)...")
-    # rf_results_pca = evaluate_batch_effects_rf(adata, use_pca=True)
-    # plot_rf_results(rf_results_pca, " (PCA + RF)")
-     ### we not retunring anything for now
-    # return {
-    #     'projection_subsets': projection_subsets,
-    #     # 'gender_subsets': gender_subsets,
-    #     'processed_full': adata_processed,
-    #     'rf_results': rf_results,
-    #     # 'rf_results_pca': rf_results_pca
-    # }
