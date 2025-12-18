@@ -52,8 +52,6 @@ def preprocess_full_dataset(adata):
 def evaluate_batch_effects_rf(adata, target_vars=['gender', 'external_donor_name', 'injection_site'], 
                               use_pca=False, n_components=50):
     """Evaluate batch effects using Random Forest classification"""
-
-    
     X = adata.X
     results = {}
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=330)    
@@ -109,11 +107,8 @@ def plot_rf_results(results, title_suffix=""):
 
 def run_comprehensive_batch_analysis(adata):
     """Run complete batch effect analysis pipeline"""
-    print("=== Comprehensive Batch Effect Analysis ===\n")
-
-    print("1. Creating subsets by projection target...")
     projection_subsets = create_projection_subsets(adata, 'injection_site')
-    print("\n2. Plotting batch effects for each projection target...")
+    print("\n *** batcheffect by mice ID for each projection target ***")
     plot_batch_effects(projection_subsets, ["external_donor_name", "gender", 'total_counts'])
     
     # print("\n3. Creating subsets by gender...")
@@ -121,7 +116,7 @@ def run_comprehensive_batch_analysis(adata):
     # print("\n4. Plotting batch effects for each gender...")
     # plot_batch_effects(gender_subsets, ["external_donor_name", "injection_site", 'total_counts'])
 
-    print("\n5. Processing full dataset...")
+    print("\n*** all the samples - check mice ID batch effect *** ")
     adata_processed = preprocess_full_dataset(adata)
     ax = sc.pl.umap(adata_processed, color=["external_donor_name", "gender", 'injection_site', 'total_counts'], 
                     ncols=2, show=False)
@@ -130,7 +125,7 @@ def run_comprehensive_batch_analysis(adata):
     plt.tight_layout()
     plt.show()
 
-    print("\n6. Random Forest evaluation (raw data)...")
+    print("\n*** Random Forest evaluation (gender and mice ID as outcome) *** ")
     rf_results = evaluate_batch_effects_rf(adata)
     plot_rf_results(rf_results, " (Raw Data)")
     
