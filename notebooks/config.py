@@ -23,6 +23,7 @@ SNRNA_DATA_DIR = os.path.join(DATA_DIR, "snRNA")
 MERFISH_DATA_DIR = os.path.join(DATA_DIR, "merfish")
 RETROSEQ_DATA_DIR = os.path.join(DATA_DIR, "retroseq")
 MESH_DIR = os.path.join(DATA_DIR, "mesh")
+OTHERS_DIR = os.path.join(DATA_DIR, "others")
 TMP_OUT_DIR = OUTPUT_DIR
 
 # Output directories for figures
