@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from scipy.interpolate import splev,splrep
 
 def get_derivatives(x,y, visualize = False):
-    from scipy.interpolate import make_splrep, splev,splrep
+    
     sort_idx = np.argsort(x)
     x_sorted = x[sort_idx]
     y_sorted = y[sort_idx]
@@ -14,7 +14,10 @@ def get_derivatives(x,y, visualize = False):
     y_fit = splev(x_fit, tck)                 # function value
     dy_dx = splev(x_fit, tck, der=1)          # first derivative
     d2y_dx2 = splev(x_fit, tck, der=2)        # second derivative
-    check_idx = np.where((x_fit>0) &(x_fit<1))[0]
+#     check_idx = np.where((x_fit>0) &(x_fit<1))[0]
+    eps = 0.15  # 5% margin; tune
+    check_idx = np.where((x_fit > eps) & (x_fit < 1 - eps))[0]
+
     
     y_pred = splev(x_sorted, tck)
     resid = y_sorted - y_pred
@@ -22,8 +25,6 @@ def get_derivatives(x,y, visualize = False):
     ss_tot = np.sum((y_sorted - np.mean(y_sorted))**2)
     r2 = 1 - ss_res / ss_tot
 
-    
-    
     if visualize:
         plt.figure(figsize=(4, 5))
         plt.scatter(x, y, s=1, alpha=0.3, label='raw data')
