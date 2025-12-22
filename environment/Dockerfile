@@ -15,6 +15,7 @@ RUN conda install -y \
 
 
 RUN pip install trimesh==4.9.0 
+RUN pip install --no-cache-dir "numpy<2" "pydeseq2"
 
 
 ADD "https://github.com/coder/code-server/releases/download/v4.100.3/code-server-4.100.3-linux-amd64.tar.gz" /.code-server/code-server.tar.gz
