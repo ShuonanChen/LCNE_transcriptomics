@@ -154,7 +154,6 @@ def plot_spatial(ax,
         ax.set_xticks(xt); ax.set_yticks(yt)
         ax.set_xticklabels(format_ticklabels(xt))
         ax.set_yticklabels(format_ticklabels(yt))
-
     
     # scale bar
     draw_scale_bar(ax,length_px=scale_px,linewidth=scale_linewidth)
@@ -181,11 +180,18 @@ def scatter_with_jitter(ax, S, cvals, s=10, scl_jitter=0.1, cmap='viridis', dire
     else: 
         x_jit = x
         y_jit = y
-    return ax.scatter(
-        x_jit, y_jit,
-        c=cvals,
-        s=s,
-        cmap=cmap,
-        edgecolor=edgecolor,
-        lw=lw
-    )
+    return ax.scatter(x_jit, y_jit, c=cvals, s=s, cmap=cmap, edgecolor=edgecolor,lw=lw)
+
+
+def add_jitter(allspatial, scl_jitter=0.01,jittering =True, rand_seed=888):
+    '''note we really only need to add on sagital view x axis which is the third dim here  (i think)'''
+    import numpy as np
+    x = allspatial[:, 0]; y = allspatial[:, 1]; z = allspatial[:, 2]
+    jitter_scale_x = scl_jitter * (x.max() - x.min())
+    if jittering:
+        np.random.seed(rand_seed)
+        x_jit = x + np.random.uniform(-jitter_scale_x, jitter_scale_x, size=len(x))
+    else: 
+        x_jit = x
+    return np.c_[x_jit, y, z]
+
