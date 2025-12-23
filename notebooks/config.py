@@ -34,6 +34,7 @@ RETROSEQ_FIGURE_DIR = os.path.join(FIGURE_DIR, "retroseq")
 # lets use actual CPM 
 # CPM_SCL = 1e4 # CPM default set to be 1e4 for now. (so count per 10k really)
 CPM_SCL = 1e6
+CPM_SCL_MERFISH = 1e4 # 10k for merfish for now, although nobody exceeded 5k for the cells we were looking at
 
 CMAP_NAME = 'PiYG'  # used for the pseudocluster only for now!
 
