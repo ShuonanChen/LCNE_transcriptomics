@@ -1,4 +1,3 @@
-# imputations 
 import pandas as pd
 import anndata
 import numpy as np
@@ -33,25 +32,6 @@ def compute_null_distribution_for_cell(X_ref, x_query, n_pairs=1000, random_stat
 
 
 
-
-def bootstrap_ci_for_cell(x_vals, weights, n_boot=500, alpha=0.05, random_state=None):
-    """note this is just for pseudoclusters
-    Compute bootstrap confidence interval for a weighted mean of values.
-    - x_vals: (k,) pseudocluster values
-    - weights: (k,) probabilities summing to 1
-    Returns (lower, upper) quantiles."""
-    if random_state is not None:
-        np.random.seed(random_state)
-    k = len(x_vals)
-    boot_means = np.empty(n_boot)
-    for b in range(n_boot):
-        idx_boot = np.random.choice(k, size=k, replace=True, p=weights)
-        boot_means[b] = x_vals[idx_boot].mean()
-    lower, upper = np.percentile(boot_means, [100 * (alpha/2), 100 * (1 - alpha/2)])
-    return lower, upper
-
-
-
 def weight_inverse_dst(distances,epsilon = 1e-10):
     ''' get the weight as the inverse distance 
     '''
@@ -70,8 +50,7 @@ def weight_softmax_dst(distances, tau = 0.1):
 
 
 
-
-def impute_mer_data(adata_sc, adata_mer, k=10, n_hvg=1000, n_holdoff_genes = 0, random_state = 111):
+def impute_mer_data(adata_sc, adata_mer, k=10, n_hvg=1000, n_holdoff_genes = 0, random_state = 111, softmax_dst= False):
     adata_sc = adata_sc.copy()  # work on a copy to avoid modifying the original data
     if n_hvg is not None:
         import scanpy as sc
@@ -103,9 +82,10 @@ def impute_mer_data(adata_sc, adata_mer, k=10, n_hvg=1000, n_holdoff_genes = 0, 
     nbrs = NearestNeighbors(n_neighbors=k, metric='euclidean').fit(X_sc_norm)
     distances, indices = nbrs.kneighbors(X_mer_norm) # distance: size (N_mer, K)
 
-    epsilon = 1e-10
-    weights = 1 / (distances + epsilon)
-    weights = weights / weights.sum(axis=1, keepdims=True)  # normalize so that weights sum to 1
+    if softmax_dst:
+        weights = weight_softmax_dst(distances, tau = 0.1)
+    else:
+        weights = weight_inverse_dst(distances,epsilon = 1e-10)
 
     imputed_expr = np.zeros((adata_mer.n_obs, len(union_genes)))
     for i in range(adata_mer.n_obs):
@@ -155,10 +135,36 @@ def replace_imputedvalues(adata_mer,adata_mer_imputed, genelist):
 
 
 
+
+
+
+
+
+def bootstrap_ci_for_cell(x_vals, weights, n_boot=500, alpha=0.05, random_state=None):
+    """bootstrap confidence interval for the mean of pc using weighted resampling.
+    note this is just for pseudoclusters
+    Compute bootstrap confidence interval for a weighted mean of values.
+    - x_vals: (k,) pseudocluster values
+    - weights: (k,) probabilities summing to 1
+    Returns (lower, upper) quantiles."""
+    if random_state is not None:
+        np.random.seed(random_state)
+    k = len(x_vals)
+    boot_means = np.empty(n_boot)
+    for b in range(n_boot):
+        idx_boot = np.random.choice(k, size=k, replace=True, p=weights)
+        boot_means[b] = x_vals[idx_boot].mean()
+    lower, upper = np.percentile(boot_means, [100 * (alpha/2), 100 * (1 - alpha/2)])
+    return lower, upper
+
+
+
+
 def impute_pseudocluster(adata_query, adata_ref, pc_dir,
                          k=10, n_null=1000, per_cell_null=False,
                          do_bootstrap=True, n_boot=500,
-                         epsilon=1e-10, weighted=True):
+                         epsilon=1e-10, weighted=True, softmax_dst=False):
+    '''load the arc info and impute the pseudocluster from ref to query, while calculating the confidence score in various way'''
     arc_path = pc_dir+'/cellID_pc_0722.csv'
     arcinfo = pd.read_csv(arc_path)
     assert (adata_ref.obs.index == arcinfo['cellID']).all()
@@ -175,9 +181,11 @@ def impute_pseudocluster(adata_query, adata_ref, pc_dir,
     nbrs = NearestNeighbors(n_neighbors=k, metric='euclidean').fit(X_ref_norm)
     distances, indices = nbrs.kneighbors(X_q_norm)
 
-    weights = 1.0 / (distances + epsilon)
-    weights /= weights.sum(axis=1, keepdims=True)
-
+    if softmax_dst:
+        weights = weight_softmax_dst(distances, tau = 0.1)
+    else:
+        weights = weight_inverse_dst(distances,epsilon = 1e-10)
+    # the actual imputation (and std) happens here!
     imputed = np.zeros(adata_query.n_obs)
     pc_std = np.zeros(adata_query.n_obs)
     for i in range(adata_query.n_obs):
