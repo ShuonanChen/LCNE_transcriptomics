@@ -171,9 +171,10 @@ def scatter_with_jitter(ax, S, cvals, s=10, scl_jitter=0.1, cmap='viridis', dire
     x = S[order, i]
     y = S[order, 1]
     cvals = np.array(cvals)[order]
-    jitter_scale_x = scl_jitter * (x.max() - x.min())
-    jitter_scale_y = scl_jitter * (y.max() - y.min())
+    
     if jittering:
+        jitter_scale_x = scl_jitter * (x.max() - x.min())
+        jitter_scale_y = scl_jitter * (y.max() - y.min())
         np.random.seed(rand_seed)
         x_jit = x + np.random.uniform(-jitter_scale_x, jitter_scale_x, size=len(x))
         y_jit = y + np.random.uniform(-jitter_scale_y, jitter_scale_y, size=len(y))
