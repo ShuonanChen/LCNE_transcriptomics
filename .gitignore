@@ -70,3 +70,4 @@ test_notebooks.py
 
 # Scratch notebooks
 **/scratch_*.ipynb
+.Trash-0/
