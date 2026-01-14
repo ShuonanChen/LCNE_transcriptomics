@@ -157,13 +157,13 @@ class ScviDEOutput(dict):
         if title is None:
             title = f"DE genes heatmap ({value_col}; LFC ≥ {self.global_LFC_scvi})"
         ax.set_title(title)
-
 #         plt.tight_layout()
 #         plt.show()
         return ax
 
 
-def DE_scvi(adata_retro, model, global_LFC_scvi, n_genes):
+
+def DE_scvi(adata_retro, model, global_LFC_scvi, n_genes, min_mean_expr=3): # <-- Add this parameter
     groupby_col = "injection_site"
     scvi_de_results = {}
     categories = adata_retro.obs[groupby_col].cat.categories
@@ -175,6 +175,23 @@ def DE_scvi(adata_retro, model, global_LFC_scvi, n_genes):
             de_result_full = model.differential_expression(idx1=cell_idx_A, idx2=cell_idx_B, mode="change")
             problematic_mask = (de_result_full.index.str.startswith("Gm") | de_result_full.index.str.endswith("Rik"))
             de_result_filtered = de_result_full.loc[~problematic_mask]
+            
+            # NEW: Filter by mean expression in the category
+            if min_mean_expr > 0:
+                if adata_retro.raw is not None:
+                    mean_expr_group = adata_retro.raw[cell_idx_A].X.mean(axis=0)
+                else:
+                    mean_expr_group = adata_retro[cell_idx_A].X.mean(axis=0)
+                
+                if hasattr(mean_expr_group, 'A1'):
+                    mean_expr_group = mean_expr_group.A1
+                
+                # Get gene names that pass threshold
+                genes_above_threshold = adata_retro.var_names[mean_expr_group > min_mean_expr]
+                # Filter DE results to only include these genes
+                de_result_filtered = de_result_filtered[de_result_filtered.index.isin(genes_above_threshold)]
+                print(f"{category}: {len(de_result_filtered)} genes after mean expr filter (>{min_mean_expr})")
+            
             scvi_de_results[category] = de_result_filtered
 
     top_genes_dict_scvi = {}
@@ -190,3 +207,33 @@ def DE_scvi(adata_retro, model, global_LFC_scvi, n_genes):
         global_LFC_scvi=global_LFC_scvi,
         n_genes=n_genes,
     )
+
+
+# def DE_scvi(adata_retro, model, global_LFC_scvi, n_genes):
+#     ''' return the scviDE class that we defined above! '''
+#     groupby_col = "injection_site"
+#     scvi_de_results = {}
+#     categories = adata_retro.obs[groupby_col].cat.categories
+
+#     for category in categories:
+#         if category != "nan":
+#             cell_idx_A = adata_retro.obs[groupby_col] == category
+#             cell_idx_B = adata_retro.obs[groupby_col] != category
+#             de_result_full = model.differential_expression(idx1=cell_idx_A, idx2=cell_idx_B, mode="change")
+#             problematic_mask = (de_result_full.index.str.startswith("Gm") | de_result_full.index.str.endswith("Rik"))
+#             de_result_filtered = de_result_full.loc[~problematic_mask]
+#             scvi_de_results[category] = de_result_filtered
+
+#     top_genes_dict_scvi = {}
+#     for group, df in scvi_de_results.items():
+#         df_filt = df[df["lfc_mean"] >= global_LFC_scvi]
+#         df_sorted = df_filt.sort_values("bayes_factor", ascending=False)
+#         top_genes_dict_scvi[group] = df_sorted.index.tolist()[:n_genes]
+
+#     return ScviDEOutput(
+#         genes_dict=top_genes_dict_scvi,
+#         de_results=scvi_de_results,
+#         groupby_col=groupby_col,
+#         global_LFC_scvi=global_LFC_scvi,
+#         n_genes=n_genes,
+#     )
