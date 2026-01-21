@@ -56,7 +56,7 @@ def impute_mer_data(adata_sc, adata_mer, k=10, n_hvg=1000, n_holdoff_genes = 0, 
         import scanpy as sc
         sc.pp.highly_variable_genes(adata_sc, n_top_genes=n_hvg, flavor='seurat_v3')
         hvg_genes = adata_sc.var_names[adata_sc.var['highly_variable']]
-    else:
+    else: # default
         hvg_genes = adata_sc.var_names
 
     union_genes = np.union1d(hvg_genes, adata_mer.var_names)  # 1183    
