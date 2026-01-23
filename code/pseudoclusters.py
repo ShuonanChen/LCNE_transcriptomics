@@ -3,6 +3,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.manifold import Isomap
 
+# Import the global colormap name from config
+try:
+    import sys
+    import os
+    # Add notebooks directory to path to import config
+    notebooks_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'notebooks')
+    if notebooks_dir not in sys.path:
+        sys.path.insert(0, notebooks_dir)
+    from config import CMAP_NAME
+    DEFAULT_CMAP = CMAP_NAME
+except ImportError:
+    DEFAULT_CMAP = 'PiYG'  # Fallback if config not found
+    print(f"Warning: Could not import CMAP_NAME from config. Using default: {DEFAULT_CMAP}")
+
 
 def get_arbitrary_orders(adata_sc):
     '''
@@ -109,7 +123,8 @@ def calculate_projection_scores(trajectory_info, n_points=1000, use_optimizer=Fa
     }
 
 
-def plot_trajectory_3d(trajectory, projections, adata=None, figsize=(10, 8), elev=30, azim=45):
+def plot_trajectory_3d(trajectory, projections, adata=None, figsize=(10, 8), 
+                       elev=30, azim=45, cmap=None):
     """
     Creates an interactive 3D plot of trajectory data with the first 3 PCs.
     
@@ -127,6 +142,8 @@ def plot_trajectory_3d(trajectory, projections, adata=None, figsize=(10, 8), ele
         Elevation angle in degrees (vertical rotation)
     azim : float, default=45
         Azimuth angle in degrees (horizontal rotation)
+    cmap : str, optional
+        Colormap name. If None, uses DEFAULT_CMAP from config
         
     Returns
     -------
@@ -135,6 +152,10 @@ def plot_trajectory_3d(trajectory, projections, adata=None, figsize=(10, 8), ele
     """
     from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
     import numpy as np
+
+    # Use global default if cmap not specified
+    if cmap is None:
+        cmap = DEFAULT_CMAP
 
     if adata is not None:
         data = adata.obsm['X_pca'][trajectory['order'], :3]
@@ -148,10 +169,10 @@ def plot_trajectory_3d(trajectory, projections, adata=None, figsize=(10, 8), ele
     fig = plt.figure(figsize=figsize)
     ax  = fig.add_subplot(111, projection='3d')
     
-    # Scatter (low zorder)
+    # Scatter (low zorder) - now uses the cmap parameter
     scatter = ax.scatter(
         data[:,0], data[:,1], data[:,2],
-        c=scores, cmap='PiYG',
+        c=scores, cmap=cmap,
         s=30, edgecolor='k', linewidth=0.2,
         alpha=0.7, zorder=1
     )
