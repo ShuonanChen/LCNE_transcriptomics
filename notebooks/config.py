@@ -19,7 +19,7 @@ OUTPUT_DIR = os.path.join(PROJECT_ROOT, "output")
 FIGURE_DIR = os.path.join(OUTPUT_DIR, "figures")
 
 # Sub-directories for different data types
-SNRNA_DATA_DIR = os.path.join(DATA_DIR, "snRNA")
+SNRNA_DATA_DIR = os.path.join(DATA_DIR, "snRNAseq_LCNE_batchcorrected")
 MERFISH_DATA_DIR = os.path.join(DATA_DIR, "merfish")
 RETROSEQ_DATA_DIR = os.path.join(DATA_DIR, "retroseq")
 MESH_DIR = os.path.join(DATA_DIR, "mesh")
@@ -27,7 +27,7 @@ OTHERS_DIR = os.path.join(DATA_DIR, "others")
 TMP_OUT_DIR = OUTPUT_DIR
 
 # Output directories for figures
-SNRNA_FIGURE_DIR = os.path.join(FIGURE_DIR, "snRNA")
+SNRNA_FIGURE_DIR = os.path.join(FIGURE_DIR, "snRNAseq")
 MERFISH_FIGURE_DIR = os.path.join(FIGURE_DIR, "merfish")
 RETROSEQ_FIGURE_DIR = os.path.join(FIGURE_DIR, "retroseq")
 

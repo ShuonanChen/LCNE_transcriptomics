@@ -96,17 +96,29 @@ def DE_scanpy(adata_retro_BN,
 
 
 ###### scvi ######
+
 class ScviDEOutput(dict):
     """
-    Dict-like: keys = group, values = list of top genes
-    Also stores full DE tables and can plot a heatmap of lfc_mean.
+    Dict-like: keys = group, values = list of top genes.
+    Stores full DE tables and provides plotting utilities.
     """
-    def __init__(self, genes_dict, de_results, groupby_col, global_LFC_scvi, n_genes):
+    def __init__(
+        self,
+        genes_dict,
+        de_results,
+        groupby_col,
+        global_LFC_scvi,
+        n_genes,
+        min_frac_expr=None,
+        min_proba_de=None,
+    ):
         super().__init__(genes_dict)
-        self.de_results = de_results
+        self.de_results = de_results          # {group: full DE DataFrame}
         self.groupby_col = groupby_col
         self.global_LFC_scvi = global_LFC_scvi
         self.n_genes = n_genes
+        self.min_frac_expr = min_frac_expr
+        self.min_proba_de = min_proba_de
 
     def _default_groups(self):
         return list(self.de_results.keys())
@@ -120,31 +132,56 @@ class ScviDEOutput(dict):
                     out.append(gene)
         return out
 
-    def plotheatmap(self, groups=None, finalist_genes=None, value_col="lfc_mean",
-                    cmap="bwr", figsize=None, title=None, vlim=None):
+    # ------------------------------------------------------------------
+    # 1) DE / LFC heatmap (sparse; NaNs where gene not in group's DE df)
+    # ------------------------------------------------------------------
+    def plotheatmap(
+        self,
+        groups=None,
+        finalist_genes=None,
+        value_col="lfc_mean",
+        cmap="bwr",
+        figsize=None,
+        title=None,
+        vlim=None,
+    ):
         if groups is None:
             groups = self._default_groups()
         if finalist_genes is None:
             finalist_genes = self._default_finalist_genes(groups)
 
-        expr_matrix = np.zeros((len(groups), len(finalist_genes)), dtype=float)
+        if len(groups) == 0 or len(finalist_genes) == 0:
+            raise ValueError("No groups or genes to plot in DE heatmap.")
+
+        expr_matrix = np.full(
+            (len(groups), len(finalist_genes)), np.nan, dtype=float
+        )
         for i, group in enumerate(groups):
             df = self.de_results[group]
             for j, gene in enumerate(finalist_genes):
-                if gene in df.index:
+                if gene in df.index and value_col in df.columns:
                     expr_matrix[i, j] = float(df.loc[gene, value_col])
 
         if vlim is None:
-            vmax = np.abs(expr_matrix).max()
+            vmax = np.nanmax(np.abs(expr_matrix))
             vmin = -vmax
         else:
             vmin, vmax = vlim
 
         if figsize is None:
-            figsize = (max(5, 0.25 * len(finalist_genes)), max(2, 0.35 * len(groups)))
+            figsize = (
+                max(5, 0.25 * len(finalist_genes)),
+                max(2, 0.35 * len(groups)),
+            )
 
         fig, ax = plt.subplots(figsize=figsize)
-        im = ax.imshow(expr_matrix, cmap=cmap, aspect="auto", vmin=vmin, vmax=vmax)
+        im = ax.imshow(
+            np.ma.masked_invalid(expr_matrix),
+            cmap=cmap,
+            aspect="auto",
+            vmin=vmin,
+            vmax=vmax,
+        )
 
         ax.set_xticks(range(len(finalist_genes)))
         ax.set_xticklabels(finalist_genes, rotation=90)
@@ -157,48 +194,202 @@ class ScviDEOutput(dict):
         if title is None:
             title = f"DE genes heatmap ({value_col}; LFC ≥ {self.global_LFC_scvi})"
         ax.set_title(title)
-#         plt.tight_layout()
-#         plt.show()
+        plt.tight_layout()
+        return ax
+
+    # ------------------------------------------------------------------
+    # 2) Expression heatmap (dense; mean expression per group & gene)
+    # ------------------------------------------------------------------
+    def plot_expression_heatmap(
+        self,
+        adata,
+        layer=None,          # e.g. "log(CPM)" or "counts"; None -> use .X
+        groups=None,
+        genes=None,
+        zscore=True,
+        cmap="bwr",
+        figsize=None,
+        title=None,
+    ):
+        if groups is None:
+            groups = self._default_groups()
+        if genes is None:
+            genes = self._default_finalist_genes(groups)
+
+        # keep only groups that exist in adata
+        groups = [
+            g for g in groups
+            if g in adata.obs[self.groupby_col].cat.categories
+        ]
+
+        if len(groups) == 0 or len(genes) == 0:
+            raise ValueError("No groups or genes to plot in expression heatmap.")
+
+        expr = np.zeros((len(groups), len(genes)), dtype=float)
+
+        for i, g in enumerate(groups):
+            idx = adata.obs[self.groupby_col] == g
+            if layer is None:
+                X = adata[idx, genes].X
+            else:
+                X = adata[idx, genes].layers[layer]
+            m = X.mean(axis=0)
+            m = m.A1 if hasattr(m, "A1") else m
+            expr[i] = m
+
+        if zscore:
+            means = expr.mean(axis=0, keepdims=True)
+            stds = expr.std(axis=0, keepdims=True)
+            stds[stds == 0] = 1.0
+            expr = (expr - means) / stds
+
+        if figsize is None:
+            figsize = (
+                max(5, 0.25 * len(genes)),
+                max(2, 0.35 * len(groups)),
+            )
+
+        fig, ax = plt.subplots(figsize=figsize)
+        im = ax.imshow(expr, aspect="auto", cmap=cmap)
+
+        ax.set_xticks(range(len(genes)))
+        ax.set_xticklabels(genes, rotation=90)
+        ax.set_yticks(range(len(groups)))
+        ax.set_yticklabels(groups)
+
+        label = "z-scored mean expression" if zscore else "mean expression"
+        cbar = plt.colorbar(im, ax=ax)
+        cbar.set_label(label)
+
+        if title is None:
+            title = f"Expression heatmap (n={len(genes)} genes)"
+        ax.set_title(title)
+
+        plt.tight_layout()
+        return ax
+
+    # ------------------------------------------------------------------
+    # 3) Confidence heatmap (dense; e.g. proba_de or bayes_factor)
+    # ------------------------------------------------------------------
+    def plot_confidence_heatmap(
+        self,
+        value_col="proba_de",
+        threshold=0.9,          # values below this are white
+        groups=None,
+        genes=None,
+        cmap="viridis",
+        figsize=None,
+        title=None,
+        vlim=(0.0, 1.0),
+    ):
+        if groups is None:
+            groups = self._default_groups()
+        if genes is None:
+            genes = self._default_finalist_genes(groups)
+
+        if len(groups) == 0 or len(genes) == 0:
+            raise ValueError("No groups or genes to plot in confidence heatmap.")
+
+        conf = np.full((len(groups), len(genes)), np.nan, dtype=float)
+
+        for i, g in enumerate(groups):
+            df = self.de_results[g]
+            for j, gene in enumerate(genes):
+                if gene in df.index and value_col in df.columns:
+                    conf[i, j] = float(df.loc[gene, value_col])
+
+        # mask:
+        # - NaNs
+        # - values below threshold
+        mask = np.isnan(conf) | (conf < threshold)
+        conf_masked = np.ma.masked_array(conf, mask=mask)
+
+        # colormap with white for masked values
+        cmap_obj = plt.cm.get_cmap(cmap).copy()
+        cmap_obj.set_bad(color="white")
+
+        if figsize is None:
+            figsize = (
+                max(5, 0.25 * len(genes)),
+                max(2, 0.35 * len(groups)),
+            )
+
+        fig, ax = plt.subplots(figsize=figsize)
+        im = ax.imshow(
+            conf_masked,
+            aspect="auto",
+            cmap=cmap_obj,
+            vmin=vlim[0],
+            vmax=vlim[1],
+        )
+
+        ax.set_xticks(range(len(genes)))
+        ax.set_xticklabels(genes, rotation=90)
+        ax.set_yticks(range(len(groups)))
+        ax.set_yticklabels(groups)
+
+        cbar = plt.colorbar(im, ax=ax)
+        cbar.set_label(value_col)
+
+        if title is None:
+            title = f"{value_col} (threshold ≥ {threshold})"
+        ax.set_title(title)
+
+        plt.tight_layout()
         return ax
 
 
+# ----------------------------------------------------------------------
+# DE_scvi helper
+# ----------------------------------------------------------------------
+def DE_scvi(
+    adata_retro,
+    model,
+    global_LFC_scvi=1.0,   # effect size: log2 fold-change >= 1
+    n_genes=10,            # max genes per group
+    min_frac_expr=0.3,    # fraction of cells expressing in group A
+    groupby_col="injection_site",
+):
+    min_proba_de = 0.5
+    scvi_de_results = {}   # full DE tables per group (after Gm/Rik filter)
+    top_genes_dict_scvi = {}
 
-def DE_scvi(adata_retro, model, global_LFC_scvi, n_genes, min_mean_expr=3): # <-- Add this parameter
-    groupby_col = "injection_site"
-    scvi_de_results = {}
     categories = adata_retro.obs[groupby_col].cat.categories
 
     for category in categories:
-        if category != "nan":
-            cell_idx_A = adata_retro.obs[groupby_col] == category
-            cell_idx_B = adata_retro.obs[groupby_col] != category
-            de_result_full = model.differential_expression(idx1=cell_idx_A, idx2=cell_idx_B, mode="change")
-            problematic_mask = (de_result_full.index.str.startswith("Gm") | de_result_full.index.str.endswith("Rik"))
-            de_result_filtered = de_result_full.loc[~problematic_mask]
-            
-            # NEW: Filter by mean expression in the category
-            if min_mean_expr > 0:
-                if adata_retro.raw is not None:
-                    mean_expr_group = adata_retro.raw[cell_idx_A].X.mean(axis=0)
-                else:
-                    mean_expr_group = adata_retro[cell_idx_A].X.mean(axis=0)
-                
-                if hasattr(mean_expr_group, 'A1'):
-                    mean_expr_group = mean_expr_group.A1
-                
-                # Get gene names that pass threshold
-                genes_above_threshold = adata_retro.var_names[mean_expr_group > min_mean_expr]
-                # Filter DE results to only include these genes
-                de_result_filtered = de_result_filtered[de_result_filtered.index.isin(genes_above_threshold)]
-                print(f"{category}: {len(de_result_filtered)} genes after mean expr filter (>{min_mean_expr})")
-            
-            scvi_de_results[category] = de_result_filtered
+        if category == "nan":
+            continue
 
-    top_genes_dict_scvi = {}
-    for group, df in scvi_de_results.items():
-        df_filt = df[df["lfc_mean"] >= global_LFC_scvi]
-        df_sorted = df_filt.sort_values("bayes_factor", ascending=False)
-        top_genes_dict_scvi[group] = df_sorted.index.tolist()[:n_genes]
+        cell_idx_A = adata_retro.obs[groupby_col] == category
+        cell_idx_B = ~cell_idx_A
+
+        de_result_full = model.differential_expression(
+            idx1=cell_idx_A,
+            idx2=cell_idx_B,
+            mode="change",
+        )
+
+        # remove Gm / Rik genes
+        problematic_mask = (
+            de_result_full.index.str.startswith("Gm")
+            | de_result_full.index.str.endswith("Rik")
+        )
+        df_full = de_result_full.loc[~problematic_mask].copy()
+
+        # store full table
+        scvi_de_results[category] = df_full
+
+        # selection mask for "top genes"
+        mask_sel = (
+            (df_full["lfc_mean"] >= global_LFC_scvi)
+            & (df_full["non_zeros_proportion1"] >= min_frac_expr)
+            & (df_full["proba_de"] >= min_proba_de)
+        )
+
+        df_sel = df_full.loc[mask_sel].sort_values(
+            "bayes_factor", ascending=False
+        )
+        top_genes_dict_scvi[category] = df_sel.index.tolist()[:n_genes]
 
     return ScviDEOutput(
         genes_dict=top_genes_dict_scvi,
@@ -206,34 +397,6 @@ def DE_scvi(adata_retro, model, global_LFC_scvi, n_genes, min_mean_expr=3): # <-
         groupby_col=groupby_col,
         global_LFC_scvi=global_LFC_scvi,
         n_genes=n_genes,
+        min_frac_expr=min_frac_expr,
+        min_proba_de=min_proba_de,
     )
-
-
-# def DE_scvi(adata_retro, model, global_LFC_scvi, n_genes):
-#     ''' return the scviDE class that we defined above! '''
-#     groupby_col = "injection_site"
-#     scvi_de_results = {}
-#     categories = adata_retro.obs[groupby_col].cat.categories
-
-#     for category in categories:
-#         if category != "nan":
-#             cell_idx_A = adata_retro.obs[groupby_col] == category
-#             cell_idx_B = adata_retro.obs[groupby_col] != category
-#             de_result_full = model.differential_expression(idx1=cell_idx_A, idx2=cell_idx_B, mode="change")
-#             problematic_mask = (de_result_full.index.str.startswith("Gm") | de_result_full.index.str.endswith("Rik"))
-#             de_result_filtered = de_result_full.loc[~problematic_mask]
-#             scvi_de_results[category] = de_result_filtered
-
-#     top_genes_dict_scvi = {}
-#     for group, df in scvi_de_results.items():
-#         df_filt = df[df["lfc_mean"] >= global_LFC_scvi]
-#         df_sorted = df_filt.sort_values("bayes_factor", ascending=False)
-#         top_genes_dict_scvi[group] = df_sorted.index.tolist()[:n_genes]
-
-#     return ScviDEOutput(
-#         genes_dict=top_genes_dict_scvi,
-#         de_results=scvi_de_results,
-#         groupby_col=groupby_col,
-#         global_LFC_scvi=global_LFC_scvi,
-#         n_genes=n_genes,
-#     )
