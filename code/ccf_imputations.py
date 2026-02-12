@@ -2,7 +2,8 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 import processing, imputations
 
-def impute_spatial_coordinates(adata_query, adata_ref, k=3, epsilon=1e-10, similarity_transform="inverse", tau=0.1, sigma=0.1):
+def impute_spatial_coordinates(adata_query, adata_ref, k=3, epsilon=1e-10, 
+                               similarity_transform="inverse", tau=0.1, sigma=0.1):
     """
     Impute spatial coordinates for query cells based on reference cells using k-nearest neighbors.
     epsilon     : float -> Small constant

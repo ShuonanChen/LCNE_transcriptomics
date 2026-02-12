@@ -61,7 +61,7 @@ def weight_gaussian_dst(distances, sigma = 0.1, eps = 1e-12):
     
 
 def impute_mer_data(adata_sc, adata_mer, k=10, n_hvg=1000, n_holdoff_genes = 0, random_state = 111,
-                    similarity_transform='softmax'):
+                    similarity_transform='softmax', similarity_kwargs=None):
     adata_sc = adata_sc.copy()  # work on a copy to avoid modifying the original data
     if n_hvg is not None:
         import scanpy as sc
@@ -93,12 +93,16 @@ def impute_mer_data(adata_sc, adata_mer, k=10, n_hvg=1000, n_holdoff_genes = 0, 
     nbrs = NearestNeighbors(n_neighbors=k, metric='euclidean').fit(X_sc_norm)
     distances, indices = nbrs.kneighbors(X_mer_norm) # distance: size (N_mer, K)
 
-    if similarity_transform=='softmax':
-        weights = weight_softmax_dst(distances, tau = 0.1)
-    elif similarity_transform=='inverse':
-        weights = weight_inverse_dst(distances,epsilon = 1e-10)
-    elif similarity_transform=='gaussian':
-        weights = weight_gaussian_dst(distances)
+    _kw = similarity_kwargs or {}
+    if similarity_transform == 'softmax':
+        kw = {'tau': 0.1, **_kw}
+        weights = weight_softmax_dst(distances, **kw)
+    elif similarity_transform == 'inverse':
+        kw = {'epsilon': 1e-10, **_kw}
+        weights = weight_inverse_dst(distances, **kw)
+    elif similarity_transform == 'gaussian':
+        kw = {'sigma': 0.1, **_kw}
+        weights = weight_gaussian_dst(distances, **kw)
 
     imputed_expr = np.zeros((adata_mer.n_obs, len(union_genes)))
     for i in range(adata_mer.n_obs):
@@ -169,9 +173,14 @@ def bootstrap_ci_for_cell(x_vals, weights, n_boot=500, alpha=0.05, random_state=
 def impute_pseudocluster(adata_query, adata_ref, pc_dir,
                          k=10, n_null=1000, per_cell_null=False,
                          do_bootstrap=True, n_boot=500,
-                         epsilon=1e-10, weighted=True, similarity_transform='softmax'):
-    '''load the arc info and impute the pseudocluster from ref to query, while calculating the confidence score in various way/
-    weight_method: "gaussian" or "softmax" or "inverse"
+                         epsilon=1e-10, weighted=True, 
+                         similarity_transform='softmax',
+                         similarity_kwargs=None):
+    '''load the arc info and impute the pseudocluster from ref to query, while calculating the confidence score in various way.
+    similarity_transform: "gaussian" or "softmax" or "inverse"
+    similarity_kwargs: dict of hyperparameters forwarded to the chosen weight
+        function.  Defaults are  tau=0.1 (softmax), epsilon=1e-10 (inverse),
+        sigma=0.1 (gaussian).
     '''
     
     arc_path = pc_dir+'/cellID_pc_0722.csv'
@@ -190,12 +199,16 @@ def impute_pseudocluster(adata_query, adata_ref, pc_dir,
     nbrs = NearestNeighbors(n_neighbors=k, metric='euclidean').fit(X_ref_norm)
     distances, indices = nbrs.kneighbors(X_q_norm)
 
-    if similarity_transform=='softmax':
-        weights = weight_softmax_dst(distances, tau = 0.1)
-    elif similarity_transform=='inverse':
-        weights = weight_inverse_dst(distances,epsilon = 1e-10)
-    elif similarity_transform=='gaussian':
-        weights = weight_gaussian_dst(distances)
+    _kw = similarity_kwargs or {}
+    if similarity_transform == 'softmax':
+        kw = {'tau': 0.1, **_kw}
+        weights = weight_softmax_dst(distances, **kw)
+    elif similarity_transform == 'inverse':
+        kw = {'epsilon': 1e-10, **_kw}
+        weights = weight_inverse_dst(distances, **kw)
+    elif similarity_transform == 'gaussian':
+        kw = {'sigma': 0.1, **_kw}
+        weights = weight_gaussian_dst(distances, **kw)
     else:
         raise ValueError("similarity_transform must be 'inverse' or 'softmax' or 'gaussian'")
         
