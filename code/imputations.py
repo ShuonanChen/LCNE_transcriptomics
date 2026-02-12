@@ -196,6 +196,8 @@ def impute_pseudocluster(adata_query, adata_ref, pc_dir,
         weights = weight_inverse_dst(distances,epsilon = 1e-10)
     elif similarity_transform=='gaussian':
         weights = weight_gaussian_dst(distances)
+    else:
+        raise ValueError("similarity_transform must be 'inverse' or 'softmax' or 'gaussian'")
         
     # the actual imputation (and std) happens here!
     imputed = np.zeros(adata_query.n_obs)
