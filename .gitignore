@@ -69,5 +69,7 @@ test_notebooks.py
 .vscode
 
 # Scratch notebooks
+/notebook/*scratch*.ipynb
 **/scratch_*.ipynb
+**/scratch.ipynb
 .Trash-0/
