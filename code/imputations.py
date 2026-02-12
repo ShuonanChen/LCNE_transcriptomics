@@ -39,18 +39,29 @@ def weight_inverse_dst(distances,epsilon = 1e-10):
     weight1 = weight1 / weight1.sum(axis=1, keepdims=True)
     return(weight1)
 
+
 def weight_softmax_dst(distances, tau = 0.1):
-    ''' get the weight as softmax distance
-    '''
+    ''' get the weight as softmax distance'''
     z = -distances / tau
     z = z - z.max(axis=1, keepdims=True) # now max is 0, everything is nonpositive
-    weight2 = np.exp(z)
-    weight2 = weight2 / weight2.sum(axis=1, keepdims=True)
-    return(weight2)
+    w = np.exp(z)
+    w = w / w.sum(axis=1, keepdims=True)
+    return(w)
 
 
+                   
+def weight_gaussian_dst(distances, sigma = 0.1, eps = 1e-12):
+    ''' get normalized gaussin kernel weight'''
+    z = -(distances**2) / (2*sigma**2)
+    z = z - z.max(axis=1, keepdims=True) # now max is 0, everything is nonpositive
+    w = np.exp(z)
+    w = w / (w.sum(axis=1, keepdims=True) + eps)
+    return(w)
 
-def impute_mer_data(adata_sc, adata_mer, k=10, n_hvg=1000, n_holdoff_genes = 0, random_state = 111, softmax_dst= False):
+    
+
+def impute_mer_data(adata_sc, adata_mer, k=10, n_hvg=1000, n_holdoff_genes = 0, random_state = 111,
+                    similarity_transform='softmax'):
     adata_sc = adata_sc.copy()  # work on a copy to avoid modifying the original data
     if n_hvg is not None:
         import scanpy as sc
@@ -82,10 +93,12 @@ def impute_mer_data(adata_sc, adata_mer, k=10, n_hvg=1000, n_holdoff_genes = 0, 
     nbrs = NearestNeighbors(n_neighbors=k, metric='euclidean').fit(X_sc_norm)
     distances, indices = nbrs.kneighbors(X_mer_norm) # distance: size (N_mer, K)
 
-    if softmax_dst:
+    if similarity_transform=='softmax':
         weights = weight_softmax_dst(distances, tau = 0.1)
-    else:
+    elif similarity_transform=='inverse':
         weights = weight_inverse_dst(distances,epsilon = 1e-10)
+    elif similarity_transform=='gaussian':
+        weights = weight_gaussian_dst(distances)
 
     imputed_expr = np.zeros((adata_mer.n_obs, len(union_genes)))
     for i in range(adata_mer.n_obs):
@@ -111,12 +124,7 @@ def impute_mer_data(adata_sc, adata_mer, k=10, n_hvg=1000, n_holdoff_genes = 0, 
     confidence_vals = np.sum(distances<baseline_dist, 1)  
     # alternatively count % of nbrs that are above baseline.
     frac_vals = confidence_vals / k
-    
-    # adata_mer_imputed.obs['impute_quality'] = confidence_scores # score -oo to 1..
-    # adata_mer_imputed.obs['not_confident'] = confidence_scores<0 # binary 
-    # adata_mer_imputed.obs['confidence_vals'] = confidence_vals
-    # adata_mer_imputed.obs['frac_vals'] = frac_vals
-    
+     
     adata_mer_imputed.obs['p_scores'] = pscores   # fraction of random distances which exceed the cells average neighbor distance
     return adata_mer_imputed
     
@@ -132,8 +140,6 @@ def replace_imputedvalues(adata_mer,adata_mer_imputed, genelist):
             if hasattr(adata_mer_imputed.X, "toarray") 
             else np.array(adata_mer_imputed[:, g].X.flatten()))
     return(adata_mer)
-
-
 
 
 
@@ -163,8 +169,11 @@ def bootstrap_ci_for_cell(x_vals, weights, n_boot=500, alpha=0.05, random_state=
 def impute_pseudocluster(adata_query, adata_ref, pc_dir,
                          k=10, n_null=1000, per_cell_null=False,
                          do_bootstrap=True, n_boot=500,
-                         epsilon=1e-10, weighted=True, softmax_dst=False):
-    '''load the arc info and impute the pseudocluster from ref to query, while calculating the confidence score in various way'''
+                         epsilon=1e-10, weighted=True, similarity_transform='softmax'):
+    '''load the arc info and impute the pseudocluster from ref to query, while calculating the confidence score in various way/
+    weight_method: "gaussian" or "softmax" or "inverse"
+    '''
+    
     arc_path = pc_dir+'/cellID_pc_0722.csv'
     arcinfo = pd.read_csv(arc_path)
     assert (adata_ref.obs.index == arcinfo['cellID']).all()
@@ -181,10 +190,13 @@ def impute_pseudocluster(adata_query, adata_ref, pc_dir,
     nbrs = NearestNeighbors(n_neighbors=k, metric='euclidean').fit(X_ref_norm)
     distances, indices = nbrs.kneighbors(X_q_norm)
 
-    if softmax_dst:
+    if similarity_transform=='softmax':
         weights = weight_softmax_dst(distances, tau = 0.1)
-    else:
+    elif similarity_transform=='inverse':
         weights = weight_inverse_dst(distances,epsilon = 1e-10)
+    elif similarity_transform=='gaussian':
+        weights = weight_gaussian_dst(distances)
+        
     # the actual imputation (and std) happens here!
     imputed = np.zeros(adata_query.n_obs)
     pc_std = np.zeros(adata_query.n_obs)
