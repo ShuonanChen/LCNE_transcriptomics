@@ -254,8 +254,7 @@ def impute_pseudocluster(adata_query, adata_ref, pc_dir,
 
     conf_dict = {
         'conf_power': pscores,
-        'ci_lower': ci_lower,
-        'ci_upper': ci_upper,
+        'ci_range': ci_upper-ci_lower,
         'pc_std': pc_std
     }
     return imputed, conf_dict    
