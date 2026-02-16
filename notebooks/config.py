@@ -34,7 +34,7 @@ RETROSEQ_FIGURE_DIR = os.path.join(FIGURE_DIR, "retroseq")
 # lets use actual CPM 
 # CPM_SCL = 1e4 # CPM default set to be 1e4 for now. (so count per 10k really)
 CPM_SCL = 1e6
-CPM_SCL_MERFISH = 1e4 # 10k for merfish for now, although nobody exceeded 5k for the cells we were looking at
+CPM_SCL_MERFISH = 1 # the load data is already normalized to have 1000 counts per cell!!!
 
 CMAP_NAME = 'PiYG'  # used for the pseudocluster only for now!
 
@@ -72,7 +72,7 @@ def configure_matplotlib():
         print("Warning: Helvetica font not found. Using default font.")
 
 # ============= HELPER FUNCTIONS =============
-def save_figure(filename, dir_path=FIGURE_DIR, formats=["svg", "png"], dpi=300):
+def save_figure(filename, dir_path=FIGURE_DIR, formats=["svg", "png"], dpi=500):
     """
     Save figure in multiple formats
     

@@ -163,27 +163,30 @@ def plot_spatial(ax,
 
 
 
-def scatter_with_jitter(ax, S, cvals, s=10, scl_jitter=0.1, cmap='viridis', direction = 'c',
-                        edgecolor='black', jittering = False, lw=0.01, ascending=False, rand_seed=888):
+def scatter_with_jitter(ax, S, cvals,
+    s=10, scl_jitter=0.1, direction='c',
+    jittering=False, ascending=False, rand_seed=888, **kwargs):
     import numpy as np
     i = 2 if direction == 'c' else 0
-    order = np.argsort(cvals) if ascending else range(len(cvals))
+    order = np.argsort(cvals) if ascending else np.arange(len(cvals))
     x = S[order, i]
     y = S[order, 1]
-    cvals = np.array(cvals)[order]
-    
+    cvals = np.asarray(cvals)[order]
     if jittering:
+        rng = np.random.default_rng(rand_seed)
         jitter_scale_x = scl_jitter * (x.max() - x.min())
         jitter_scale_y = scl_jitter * (y.max() - y.min())
-        np.random.seed(rand_seed)
-        x_jit = x + np.random.uniform(-jitter_scale_x, jitter_scale_x, size=len(x))
-        y_jit = y + np.random.uniform(-jitter_scale_y, jitter_scale_y, size=len(y))
-    else: 
-        x_jit = x
-        y_jit = y
-    return ax.scatter(x_jit, y_jit, c=cvals, s=s, cmap=cmap, edgecolor=edgecolor,lw=lw)
+        x = x + rng.uniform(-jitter_scale_x, jitter_scale_x, size=len(x))
+        y = y + rng.uniform(-jitter_scale_y, jitter_scale_y, size=len(y))
 
+    scatter_defaults = dict(
+        cmap='viridis',
+        edgecolors='black',
+        lw=0.01,)
+    scatter_kwargs = {**scatter_defaults, **kwargs}
+    return ax.scatter(x, y, c=cvals, s=s, **scatter_kwargs)
 
+    
 def add_jitter(allspatial, scl_jitter=0.01,jittering =True, rand_seed=888):
     '''note we really only need to add on sagital view x axis which is the third dim here  (i think)'''
     import numpy as np
