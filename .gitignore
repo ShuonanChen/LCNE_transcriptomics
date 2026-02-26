@@ -72,4 +72,5 @@ test_notebooks.py
 /notebook/*scratch*.ipynb
 **/scratch_*.ipynb
 **/scratch.ipynb
+**/*OLD.ipynb
 .Trash-0/

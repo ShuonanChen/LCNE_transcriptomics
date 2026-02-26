@@ -49,10 +49,10 @@ def compare_permuted_pca_cumulative(
 
     # Combined figure: left (cumulative), right (2x2 scatters)
     fig, axes = plt.subplots(
-        1, 2,
-        figsize=(15, 6),
-        gridspec_kw={'width_ratios': [1.4, 1]}
-    )
+    1, 2,
+    figsize=(15, 6),
+    gridspec_kw={'width_ratios': [1.4, 1]},
+    constrained_layout=True)
 
     # Left cumulative variance plot
     ax_cum = axes[0]
@@ -80,8 +80,6 @@ def compare_permuted_pca_cumulative(
         sub_axes[j].scatter(perm_pca[:,0], perm_pca[:,1],
                             s=5, alpha=0.7, c='gray', label=f'Perm #{j}')
         sub_axes[j].set(title=f'Permuted PCA #{j}', xlabel='PC1', ylabel='PC2', aspect='equal')
-
-    fig.tight_layout()
     return fig, (ax_cum, sub_axes)
 
 

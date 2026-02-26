@@ -15,12 +15,10 @@ def load_sym_mesh(meshhome):
 
 
 def load_mesh(meshhome,
-              nameconstrains = '*67*'
-             ):
+              nameconstrains = '*67*'):
     """
     Load all meshes (specify the string later)
     """
-
     import glob
     allmeshfiles = np.sort(glob.glob(meshhome+'/'+ nameconstrains))
     meshdict = dict()

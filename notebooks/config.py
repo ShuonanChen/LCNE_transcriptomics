@@ -22,7 +22,8 @@ FIGURE_DIR = os.path.join(OUTPUT_DIR, "figures")
 SNRNA_DATA_DIR = os.path.join(DATA_DIR, "snRNAseq_LCNE_batchcorrected")
 MERFISH_DATA_DIR = os.path.join(DATA_DIR, "merfish")
 RETROSEQ_DATA_DIR = os.path.join(DATA_DIR, "retroseq")
-MESH_DIR = os.path.join(DATA_DIR, "mesh")
+MESH_DIR = os.path.join(DATA_DIR, "LC_percentile_meshes")
+MESH_DIR_sym = os.path.join(DATA_DIR, "mesh")
 OTHERS_DIR = os.path.join(DATA_DIR, "others")
 TMP_OUT_DIR = OUTPUT_DIR
 
