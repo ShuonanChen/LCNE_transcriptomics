@@ -164,8 +164,10 @@ def plot_spatial(ax,
 
 
 def scatter_with_jitter(ax, S, cvals,
-    s=10, scl_jitter=0.1, direction='c',
+    s=10, scl_jitter=0, direction='c',
     jittering=False, ascending=False, rand_seed=888, **kwargs):
+    '''note that the default is False (no jitter assuming your input data is already jittered!!!)'''
+    if jittering: print('**** you are actually JITTERING ****')
     import numpy as np
     i = 2 if direction == 'c' else 0
     order = np.argsort(cvals) if ascending else np.arange(len(cvals))
