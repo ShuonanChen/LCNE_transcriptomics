@@ -35,9 +35,25 @@ def get_hemi(S_mer, meshhome=None):
     new_coords[:,-1] = np.where(new_coords[:,-1] > xm, flip(new_coords[:,-1],xm), new_coords[:,-1])    
     return(new_coords)
 
+def mirror_mesh_from_ref(mesh_to_mirror, meshhome):
+    import trimesh
+    allmeshes = utils.load_sym_mesh(meshhome)
+    ref_mesh = allmeshes[-1]
+    xm = np.min(ref_mesh.vertices[:, -1]) + np.ptp(ref_mesh.vertices[:, -1]) / 2
+    verts = mesh_to_mirror.vertices.copy()
+    verts[:, -1] = flip(verts[:, -1], xm)
+    mirrored_mesh = trimesh.Trimesh(
+        vertices=verts,
+        faces=mesh_to_mirror.faces,
+        process=False
+    )
+    return mirrored_mesh
 
-
-
+def make_bilateral_mesh_from_ref(mesh_to_mirror, meshhome):
+    import trimesh
+    mirrored_mesh = mirror_mesh_from_ref(mesh_to_mirror, meshhome)
+    mesh_both = trimesh.util.concatenate([mesh_to_mirror, mirrored_mesh])
+    return mesh_both
 
 def normalize_cols(M, ranked=True):
     """
