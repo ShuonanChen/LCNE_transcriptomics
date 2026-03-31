@@ -14,11 +14,8 @@ import seaborn as sns
 
 
 def perform_cca(X, S, n_components=2, scl_multiplier=25):
-    """
-    Perform Canonical Correlation Analysis between gene expression and spatial data
-    
-    Parameters:
-    -----------
+    """   Perform Canonical Correlation Analysis between gene expression and spatial data
+    inputs::::
     X : numpy.ndarray
         Gene expression matrix
     S : numpy.ndarray
@@ -28,8 +25,7 @@ def perform_cca(X, S, n_components=2, scl_multiplier=25):
     scl_multiplier : float, default=25
         Scaling factor for spatial coordinates
     
-    Returns:
-    --------
+    outputs::::
     cca : CCA object
         Fitted CCA model
     X_c : numpy.ndarray
@@ -37,25 +33,16 @@ def perform_cca(X, S, n_components=2, scl_multiplier=25):
     S_c : numpy.ndarray
         Transformed spatial data
     canonical_correlations : list
-        List of canonical correlations
-    """
-    # Scale gene expression data
+        List of canonical correlations"""
     scaler_X = StandardScaler().fit(X)
     X_scaled = scaler_X.transform(X)
-    
-    # Scale spatial data
     scaler_S = StandardScaler().fit(S * scl_multiplier)
     S_scaled = scaler_S.transform(S)
-    
-    # Perform CCA
     cca = CCA(n_components=n_components)
     cca.fit(X_scaled, S_scaled)
     X_c, S_c = cca.transform(X_scaled, S_scaled)
-    
-    # Calculate canonical correlations
     canonical_correlations = [np.corrcoef(X_c[:, i], S_c[:, i])[0, 1] for i in range(n_components)]
-    
-    return cca, X_c, S_c, canonical_correlations
+    return cca, X_c, S_c, canonical_correlations  # for the arrow cca.y_weights_[:, k] is what you want from here. (k=0)
 
 
 def visualize_cca_component(cca, X_c, canonical_correlations, spatial_coords, mesh, component=0, scale_factor=25):
