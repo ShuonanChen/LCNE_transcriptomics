@@ -4,18 +4,25 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 
 # ============= PATH CONFIGURATION =============
-# Get project root directory (assuming config.py is in lcne_transcriptomics/notebooks/)
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Determine paths based on Code Ocean environment
+# In reproducible runs: /code is working directory, /data and /results are mounted
+if os.path.exists('/code'):
+    # Code Ocean environment
+    PROJECT_ROOT = '/code'
+    DATA_DIR = '/data'
+    OUTPUT_DIR = '/results'
+else:
+    # Local/IDE environment
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+    OUTPUT_DIR = os.path.join(PROJECT_ROOT, "output")
 
 # Add the code directory to Python path so modules can be imported
-CODE_DIR = os.path.join(PROJECT_ROOT, "code")
+CODE_DIR = os.path.join(PROJECT_ROOT, "code") if not os.path.exists('/code') else PROJECT_ROOT
 if CODE_DIR not in sys.path:
     sys.path.insert(0, CODE_DIR)
 
-
 # Define standard paths
-DATA_DIR = os.path.join(PROJECT_ROOT, "data")
-OUTPUT_DIR = os.path.join(PROJECT_ROOT, "output")
 FIGURE_DIR = os.path.join(OUTPUT_DIR, "figures")
 
 # Sub-directories for different data types

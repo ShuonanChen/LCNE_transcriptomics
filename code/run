@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Reproducible run script for LCNE_transcriptomics notebooks
+
+echo "=== Starting LCNE Transcriptomics Analysis ==="
+
+# Ensure output directories exist
+mkdir -p /results/figures /scratch
+
+# Link output to results for notebook compatibility
+ln -sf /results /code/output 2>/dev/null || true
+
+# Notebooks must be in /code directory to be included in reproducible runs
+# Paths are relative to /code (working directory)
+# Order matters: snRNA notebooks first (generate gene lists), then MERFISH/Retro notebooks (use gene lists)
+NOTEBOOKS=(
+    "notebooks/snRNA/plot_all_snRNA_figs.ipynb"
+    "notebooks/snRNA/continuum_analayis.ipynb"
+    "notebooks/snRNA/structure_analysis.ipynb"    
+    "notebooks/merfish/plot_all_merfish_figs.ipynb"
+    "notebooks/retroseq/plot_all_retroseq_figs.ipynb"
+    "notebooks/retroseq/projection_predict.ipynb"
+)
+
+# Run each notebook
+for notebook in "${NOTEBOOKS[@]}"; do
+    echo ""
+    echo ">>> Executing: $notebook"
+    if [[ -f "$notebook" ]]; then
+        jupyter nbconvert --to notebook --execute --inplace \
+            --ExecutePreprocessor.timeout=600 "$notebook"
+        echo "✓ Completed: $notebook"
+    else
+        echo "ERROR: File not found: $notebook"
+        exit 1
+    fi
+done
+
+echo ""
+echo "=== All notebooks completed successfully ==="
+echo "Results in /results"
+
