@@ -1,2 +1,6 @@
 metadata_version: 1
 name: LCNE_transcriptomics
+description: snRNAseq, MERFISH, and retro-seq downstream analysis (pseudocluster,
+  CCA, imputation)
+authors:
+- name: shuonan chen
