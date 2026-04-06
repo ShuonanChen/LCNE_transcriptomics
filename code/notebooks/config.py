@@ -26,7 +26,7 @@ if CODE_DIR not in sys.path:
 FIGURE_DIR = os.path.join(OUTPUT_DIR, "figures")
 
 # Sub-directories for different data types
-SNRNA_DATA_DIR = os.path.join(DATA_DIR, "snRNAseq_LCNE_batchcorrected")
+SNRNA_DATA_DIR = os.path.join(DATA_DIR, "snRNAseq")
 MERFISH_DATA_DIR = os.path.join(DATA_DIR, "merfish")
 RETROSEQ_DATA_DIR = os.path.join(DATA_DIR, "retroseq")
 MESH_DIR = os.path.join(DATA_DIR, "LC_percentile_meshes")
