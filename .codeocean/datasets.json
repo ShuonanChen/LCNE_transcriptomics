@@ -6,6 +6,10 @@
 			"mount": "snRNAseq_LCNE_batchcorrected"
 		},
 		{
+			"id": "32df97b8-c759-4ae8-bfe1-371111655e32",
+			"mount": "merfish"
+		},
+		{
 			"id": "c712751d-f744-4fe8-9657-93a7084eab22",
 			"mount": "LC_percentile_meshes"
 		}
