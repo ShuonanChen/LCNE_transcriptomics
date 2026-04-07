@@ -12,7 +12,7 @@ if _CODE_OCEAN:
     # Code Ocean environment
     PROJECT_ROOT = '/root/capsule/code'
     DATA_DIR = '/root/capsule/data'
-    OUTPUT_DIR = '/root/capsule/output'
+    OUTPUT_DIR = '/root/capsule/result'
 else:
     # Local/IDE environment
     PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
