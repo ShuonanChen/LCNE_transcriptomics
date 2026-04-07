@@ -10,9 +10,9 @@ _CODE_OCEAN = os.path.exists('/code') and os.path.exists('/data') and os.path.ex
 
 if _CODE_OCEAN:
     # Code Ocean environment
-    PROJECT_ROOT = '/root/capsule/code'
-    DATA_DIR = '/root/capsule/data'
-    OUTPUT_DIR = '/root/capsule/result'
+    PROJECT_ROOT = '/code'
+    DATA_DIR = '/data'
+    OUTPUT_DIR = '/results'
 else:
     # Local/IDE environment
     PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
