@@ -29,7 +29,7 @@ for notebook in "${NOTEBOOKS[@]}"; do
     echo ">>> Executing: $notebook"
     if [[ -f "$notebook" ]]; then
         jupyter nbconvert --to notebook --execute --inplace \
-            --ExecutePreprocessor.timeout=600 "$notebook"
+            --ExecutePreprocessor.timeout=3600 "$notebook"
         echo "✓ Completed: $notebook"
     else
         echo "ERROR: File not found: $notebook"
