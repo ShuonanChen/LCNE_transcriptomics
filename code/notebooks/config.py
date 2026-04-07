@@ -6,19 +6,21 @@ import matplotlib.font_manager as fm
 # ============= PATH CONFIGURATION =============
 # Determine paths based on Code Ocean environment
 # In reproducible runs: /code is working directory, /data and /results are mounted
-if os.path.exists('/code'):
+_CODE_OCEAN = os.path.exists('/code') and os.path.exists('/data') and os.path.exists('/results')
+
+if _CODE_OCEAN:
     # Code Ocean environment
-    PROJECT_ROOT = '/code'
-    DATA_DIR = '/data'
-    OUTPUT_DIR = '/results'
+    PROJECT_ROOT = '/root/capsule/code'
+    DATA_DIR = '/root/capsule/data'
+    OUTPUT_DIR = '/root/capsule/output'
 else:
     # Local/IDE environment
-    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     DATA_DIR = os.path.join(PROJECT_ROOT, "data")
     OUTPUT_DIR = os.path.join(PROJECT_ROOT, "output")
 
 # Add the code directory to Python path so modules can be imported
-CODE_DIR = os.path.join(PROJECT_ROOT, "code") if not os.path.exists('/code') else PROJECT_ROOT
+CODE_DIR = PROJECT_ROOT if _CODE_OCEAN else os.path.join(PROJECT_ROOT, "code")
 if CODE_DIR not in sys.path:
     sys.path.insert(0, CODE_DIR)
 
@@ -53,8 +55,8 @@ for directory in [DATA_DIR, OUTPUT_DIR, FIGURE_DIR,
     os.makedirs(directory, exist_ok=True)
 
 # ============= PLOT CONFIGURATION =============
-# Default font path (modify as needed)
-FONT_PATH = os.path.join(PROJECT_ROOT, 'fonts', 'Helvetica.ttc')
+# Default font path
+FONT_PATH = os.path.join(CODE_DIR, 'utils', 'Helvetica.ttc')
 
 
 def configure_matplotlib():
