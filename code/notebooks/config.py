@@ -12,6 +12,7 @@ if _CODE_OCEAN:
     # Code Ocean environment
     PROJECT_ROOT = '/code'
     DATA_DIR = '/data'
+    # OUTPUT_DIR = '/results'
     OUTPUT_DIR = '/results'
 else:
     # Local/IDE environment
