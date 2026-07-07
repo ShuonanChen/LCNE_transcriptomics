@@ -1,3 +1,6 @@
+MESH_MIDLINE = 227.5106275
+
+
 import pandas as pd
 import anndata
 import numpy as np
@@ -23,23 +26,26 @@ def flip(a, xm):
         return(2*xm-a)
 
     
-def get_hemi(S_mer, meshhome=None):
+def get_hemi(S_mer, xm=MESH_MIDLINE):#, meshhome=None):
     '''
-    assume the axis of interest are both on the last axis. 
+    Fold coordinates onto one hemisphere by mirroring points that lie past the mesh's midline. 
+    Axis of interest is assumed to be the last axis.
+    xm is calculated previouslay (227.5106275)
     '''
-    if meshhome !=None:
-        allmeshes = utils.load_sym_mesh(meshhome)
-        mesh = allmeshes[-1]
-    xm = np.min(mesh.vertices[:,-1]) + np.ptp(mesh.vertices[:,-1])/2 # this is the center line to indicate the hemisphere 
+    # if meshhome !=None:
+    #     allmeshes = utils.load_sym_mesh(meshhome)
+    #     mesh = allmeshes[-1]
+    # xm = np.min(mesh.vertices[:,-1]) + np.ptp(mesh.vertices[:,-1])/2 # this is the center line to indicate the hemisphere 
     new_coords = S_mer.copy()
     new_coords[:,-1] = np.where(new_coords[:,-1] > xm, flip(new_coords[:,-1],xm), new_coords[:,-1])    
     return(new_coords)
 
-def mirror_mesh_from_ref(mesh_to_mirror, meshhome):
+def mirror_mesh_from_ref(mesh_to_mirror, xm=MESH_MIDLINE):
+    '''
+    Reflect a mesh across the reference mesh's midline, returning the
+    mirrored copy (same faces, flipped last-axis coordinates).
+    '''
     import trimesh
-    allmeshes = utils.load_sym_mesh(meshhome)
-    ref_mesh = allmeshes[-1]
-    xm = np.min(ref_mesh.vertices[:, -1]) + np.ptp(ref_mesh.vertices[:, -1]) / 2
     verts = mesh_to_mirror.vertices.copy()
     verts[:, -1] = flip(verts[:, -1], xm)
     mirrored_mesh = trimesh.Trimesh(
@@ -49,11 +55,13 @@ def mirror_mesh_from_ref(mesh_to_mirror, meshhome):
     )
     return mirrored_mesh
 
-def make_bilateral_mesh_from_ref(mesh_to_mirror, meshhome):
-    ''' this is to put the mesh to both sides per request on figs
+def make_bilateral_mesh_from_ref(mesh_to_mirror):
+    '''
+    Build a two-sided mesh by combining the original with its mirror,
+    for plotting the structure on both hemispheres.
     '''
     import trimesh
-    mirrored_mesh = mirror_mesh_from_ref(mesh_to_mirror, meshhome)
+    mirrored_mesh = mirror_mesh_from_ref(mesh_to_mirror)
     mesh_both = trimesh.util.concatenate([mesh_to_mirror, mirrored_mesh])
     return mesh_both
 

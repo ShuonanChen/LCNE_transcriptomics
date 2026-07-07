@@ -33,7 +33,7 @@ SNRNA_DATA_DIR = os.path.join(DATA_DIR, "LC_NE_preprocessed/snRNAseq/")
 MERFISH_DATA_DIR = os.path.join(DATA_DIR, "LC_NE_preprocessed/merfish/")
 RETROSEQ_DATA_DIR = os.path.join(DATA_DIR, "LC_NE_preprocessed/retroseq/")
 MESH_DIR = os.path.join(DATA_DIR, "LC_percentile_meshes/")
-MESH_DIR_sym = os.path.join(DATA_DIR, "mesh/")
+# MESH_DIR_sym = os.path.join(DATA_DIR, "mesh/")
 OTHERS_DIR = os.path.join(DATA_DIR, "others/")
 TMP_OUT_DIR = OUTPUT_DIR
 
@@ -48,6 +48,7 @@ CPM_SCL = 1e6
 CPM_SCL_MERFISH = 1 # the load data is already normalized to have 1000 counts per cell!!!
 
 CMAP_NAME = 'PiYG'  # used for the pseudocluster only for now!
+
 
 # Create necessary directories
 for directory in [DATA_DIR, OUTPUT_DIR, FIGURE_DIR, 
