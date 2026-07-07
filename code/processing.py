@@ -50,6 +50,8 @@ def mirror_mesh_from_ref(mesh_to_mirror, meshhome):
     return mirrored_mesh
 
 def make_bilateral_mesh_from_ref(mesh_to_mirror, meshhome):
+    ''' this is to put the mesh to both sides per request on figs
+    '''
     import trimesh
     mirrored_mesh = mirror_mesh_from_ref(mesh_to_mirror, meshhome)
     mesh_both = trimesh.util.concatenate([mesh_to_mirror, mirrored_mesh])
