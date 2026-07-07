@@ -201,13 +201,13 @@ def impute_pseudocluster(adata_query, adata_ref, pc_dir,
 
     _kw = similarity_kwargs or {}
     if similarity_transform == 'softmax':
-        kw = {'tau': 0.1, **_kw}
+        kw = {'tau': 1, **_kw}
         weights = weight_softmax_dst(distances, **kw)
     elif similarity_transform == 'inverse':
         kw = {'epsilon': 1e-10, **_kw}
         weights = weight_inverse_dst(distances, **kw)
     elif similarity_transform == 'gaussian':
-        kw = {'sigma': 0.1, **_kw}
+        kw = {'sigma': 5, **_kw}
         weights = weight_gaussian_dst(distances, **kw)
     else:
         raise ValueError("similarity_transform must be 'inverse' or 'softmax' or 'gaussian'")

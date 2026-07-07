@@ -10,7 +10,15 @@ from pydeseq2.ds import DeseqStats
 MOUSE_COL = "external_donor_name"
 TARGET_COL = "injection_site"
 
-def make_pseudobulk(adata, target_col, mouse_col=MOUSE_COL, agg="sum", use_raw=False):
+def make_pseudobulk(adata, target_col, mouse_col=MOUSE_COL, agg="sum", use_raw=False,
+                    covariate_cols=()):
+    """Aggregate single cells into per-(mouse, target) pseudobulk profiles.
+
+    covariate_cols : extra obs columns (e.g. "gender") carried into pb_meta via
+        .first(). They must be constant within each (mouse, target) group -- which
+        is the case for mouse-level covariates like sex -- otherwise .first()
+        would silently pick one value; we assert this.
+    """
     adata0 = adata.raw.to_adata() if (use_raw and adata.raw is not None) else adata
     if use_raw and adata.raw is not None: adata0.obs = adata.obs.copy()
     bad = adata0.var_names.str.startswith("Gm") | adata0.var_names.str.endswith("Rik")
@@ -23,7 +31,15 @@ def make_pseudobulk(adata, target_col, mouse_col=MOUSE_COL, agg="sum", use_raw=F
     if agg == "mean": pb_expr = gb.mean()
     elif agg == "sum": pb_expr = gb.sum()
     else: raise ValueError(f"Unknown agg='{agg}', use 'sum' or 'mean'.")
-    pb_meta = obs.groupby("__group_id")[group_cols].first()
+    meta_cols = group_cols + [c for c in covariate_cols if c not in group_cols]
+    for c in covariate_cols:
+        n_levels = obs.groupby("__group_id")[c].nunique(dropna=False)
+        if (n_levels > 1).any():
+            bad_groups = n_levels.index[n_levels > 1].tolist()
+            raise ValueError(
+                f"Covariate '{c}' is not constant within {len(bad_groups)} group(s) "
+                f"(e.g. {bad_groups[:3]}); it cannot be carried as a per-sample covariate.")
+    pb_meta = obs.groupby("__group_id")[meta_cols].first()
     pb_expr.index = pb_meta.index
     return pb_expr, pb_meta
 
@@ -219,14 +235,9 @@ def run_pseudobulk_pipeline(
 
 
 #############################################################################
-#####################     optional: DESeq2 on pseudobulk  #####################
+#####################     DESeq2 on pseudobulk  #####################
 #############################################################################    
-
-# Add these to pseudobulk.py (same module as run_pseudobulk_pipeline)
-
 def _sanitize_level(s: str) -> str: return re.sub(r"\W+", "_", str(s)).strip("_")
-
-
 
 def make_binary_contrast_metadata(
     pb_meta: pd.DataFrame,
@@ -284,7 +295,7 @@ def run_deseq2_one_vs_rest(
     )
     dds.deseq2()
 
-    contrast = [binary_col, target_level, other_label]
+    contrast = [binary_col, target_level, other_label]  #  list of 3 strings of the form ["variable", "tested_level", "control_level"]
     stat_res = DeseqStats(dds, contrast=contrast, n_cpus=n_cpus)
     stat_res.summary() if not quiet else None
 
@@ -298,6 +309,167 @@ def run_deseq2_one_vs_rest(
         "binary_col": binary_col,
         "target_level": target_level,
         "contrast": contrast,
+    }
+
+
+def run_deseq2_multifactor_one_vs_rest(
+    pb_expr: pd.DataFrame,
+    pb_meta: pd.DataFrame,
+    groupby_col: str,
+    covariate_cols=("gender",),
+    *,
+    min_total_count: int = 10,
+    counts_round: bool = True,
+    n_cpus: int = 4,
+    refit_cooks: bool = True,
+    lfc_shrink: bool = False,
+    quiet: bool = True,
+):
+    """Fit ONE DeseqDataSet over all levels of ``groupby_col`` and extract each
+    level's effect as a one-vs-rest contrast (level vs the mean of the others).
+
+    Design is ``~ <covariate_cols> + <groupby_col>``, so dispersion is estimated
+    once across all samples (more stable at 3-8 replicates than re-pooling a
+    heterogeneous "Other" group per target, as ``run_deseq2_one_vs_rest`` does)
+    and nuisance covariates such as ``gender`` are adjusted out.
+
+    Important details:
+      * ``pb_expr`` must be *counts* (use results["pb_expr"] / make_pseudobulk sums).
+      * Samples whose ``groupby_col`` is NaN/"nan" (e.g. thalamus set to NaN
+        upstream) are dropped -- they must not leak into the reference.
+      * Genes with summed count < ``min_total_count`` are dropped before fitting
+        to stabilize dispersion (pydeseq2 recommendation).
+      * pydeseq2 0.5.2's ``ref_level`` does not reliably control the dropped level,
+        so the reference is auto-detected from the fitted LFC columns. One-vs-rest
+        is reference-invariant anyway.
+
+    LFC shrinkage caveat: ``DeseqStats.lfc_shrink`` shrinks a *named* design
+    coefficient, not an arbitrary numeric contrast, so apeglm shrinkage cannot be
+    applied to these one-vs-rest contrasts in 0.5.2. ``lfc_shrink=True`` therefore
+    only warns and proceeds unshrunk. To get real shrinkage later, either rank by
+    ``stat`` or recast the contrast of interest as a pairwise ``site-vs-ref``
+    coefficient and call ``lfc_shrink(coeff="<groupby_col>[T.<site>]")``.
+
+    Returns dict: ``res_df`` (long, all sites, gene index + 'target'),
+    ``results_by_site`` (per-site results_df), ``dds``, ``reference_site``,
+    ``genes_kept``, ``contrasts`` (site -> numpy vector).
+    """
+    import re
+    import warnings
+    import formulaic
+
+    covariate_cols = list(covariate_cols)
+
+    # --- counts -> int ---
+    pb_counts = pb_expr.copy()
+    if counts_round:
+        pb_counts = pb_counts.round()
+    pb_counts = pb_counts.astype(int)
+
+    meta = pb_meta.copy()
+    assert pb_counts.index.equals(meta.index), "pb_expr and pb_meta index mismatch."
+
+    # --- drop NaN-site samples (fixes thalamus/NaN leak into the reference) ---
+    site_str = meta[groupby_col].astype(str)
+    keep_site = meta[groupby_col].notna() & (site_str.str.lower() != "nan")
+    n_drop_site = int((~keep_site).sum())
+    if n_drop_site:
+        warnings.warn(f"Dropping {n_drop_site} pseudobulk sample(s) with NaN '{groupby_col}'.")
+    meta = meta[keep_site]
+    pb_counts = pb_counts.loc[meta.index]
+
+    # --- drop covariate-NaN samples; require >=2 observed levels per covariate ---
+    for c in covariate_cols:
+        keep_cov = meta[c].notna() & (meta[c].astype(str).str.lower() != "nan")
+        n_drop_cov = int((~keep_cov).sum())
+        if n_drop_cov:
+            warnings.warn(f"Dropping {n_drop_cov} pseudobulk sample(s) with NaN covariate '{c}'.")
+            meta = meta[keep_cov]
+            pb_counts = pb_counts.loc[meta.index]
+        n_levels = meta[c].astype(str).nunique()
+        if n_levels < 2:
+            raise ValueError(
+                f"Covariate '{c}' has {n_levels} level(s) after filtering; not estimable. "
+                f"Drop it from covariate_cols.")
+
+    # design factors must be categorical for pydeseq2
+    for c in covariate_cols + [groupby_col]:
+        meta[c] = meta[c].astype(str).astype("category")
+
+    # --- low-count gene pre-filter ---
+    genes_kept = pb_counts.columns[pb_counts.sum(axis=0) >= min_total_count]
+    pb_counts = pb_counts[genes_kept]
+
+    design_factors = covariate_cols + [groupby_col]
+    design_str = "~ " + " + ".join(design_factors)
+
+    # --- full-rank guard: a rank-deficient design makes dds.deseq2() HANG ---
+    M = formulaic.model_matrix(design_str, meta)
+    M = np.asarray(M)
+    rank = np.linalg.matrix_rank(M)
+    if rank < M.shape[1]:
+        raise ValueError(
+            f"Design '{design_str}' is rank-deficient ({rank} < {M.shape[1]} cols) -- "
+            f"a covariate is confounded with '{groupby_col}'. Refusing to fit "
+            f"(pydeseq2 would hang). Drop the confounded covariate.")
+
+    dds = DeseqDataSet(
+        counts=pb_counts,
+        metadata=meta,
+        design_factors=design_factors,
+        refit_cooks=refit_cooks,
+        n_cpus=n_cpus,
+        quiet=quiet,
+    )
+    dds.deseq2()
+
+    if lfc_shrink:
+        warnings.warn(
+            "lfc_shrink is not available for one-vs-rest numeric contrasts in pydeseq2 "
+            "0.5.2; proceeding with unshrunk LFCs. See docstring for alternatives.")
+
+    # --- map each site to its LFC coefficient column; reference = missing site ---
+    lfc_cols = list(dds.varm["LFC"].columns)
+    pat = re.compile(re.escape(groupby_col) + r"\[T\.(.+)\]")
+    site_to_col = {}
+    for j, col in enumerate(lfc_cols):
+        m = pat.fullmatch(col)
+        if m:
+            site_to_col[m.group(1)] = j
+    all_sites = sorted(meta[groupby_col].astype(str).unique())
+    ref_sites = [s for s in all_sites if s not in site_to_col]
+    assert len(ref_sites) == 1, f"Expected exactly one reference site, got {ref_sites}."
+    reference_site = ref_sites[0]
+    k = len(all_sites)
+
+    def _ovr_contrast(target):
+        vec = np.zeros(len(lfc_cols))
+        for site, j in site_to_col.items():
+            w = (1.0 if site == target else 0.0) - ((1.0 / (k - 1)) if site != target else 0.0)
+            vec[j] = w
+        return vec
+
+    results_by_site = {}
+    contrasts = {}
+    frames = []
+    for site in all_sites:
+        vec = _ovr_contrast(site)
+        contrasts[site] = vec
+        stat_res = DeseqStats(dds, contrast=vec, n_cpus=n_cpus, quiet=quiet)
+        stat_res.summary()
+        rdf = stat_res.results_df.copy()
+        rdf["target"] = site
+        results_by_site[site] = rdf
+        frames.append(rdf)
+
+    res_df = pd.concat(frames, axis=0)
+    return {
+        "res_df": res_df,
+        "results_by_site": results_by_site,
+        "dds": dds,
+        "reference_site": reference_site,
+        "genes_kept": list(genes_kept),
+        "contrasts": contrasts,
     }
 
 

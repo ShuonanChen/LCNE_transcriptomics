@@ -70,7 +70,7 @@ test_notebooks.py
 
 # Scratch notebooks
 /notebook/*scratch*.ipynb
-/notebook/outdated/*
+code/notebooks/outdated/
 **/scratch_*.ipynb
 **/scratch.ipynb
 **/*OLD.ipynb

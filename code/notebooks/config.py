@@ -10,10 +10,10 @@ _CODE_OCEAN = os.path.exists('/code') and os.path.exists('/data') and os.path.ex
 
 if _CODE_OCEAN:
     # Code Ocean environment
-    PROJECT_ROOT = '/code'
-    DATA_DIR = '/data'
-    # OUTPUT_DIR = '/results'
-    OUTPUT_DIR = '/results'
+    PROJECT_ROOT = '/code/'
+    DATA_DIR = '/data/'
+    # OUTPUT_DIR = '/results/'
+    OUTPUT_DIR = '/results/'
 else:
     # Local/IDE environment
     PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,12 +29,12 @@ if CODE_DIR not in sys.path:
 FIGURE_DIR = os.path.join(OUTPUT_DIR, "figures")
 
 # Sub-directories for different data types
-SNRNA_DATA_DIR = os.path.join(DATA_DIR, "snRNAseq_LCNE_batchcorrected")
-MERFISH_DATA_DIR = os.path.join(DATA_DIR, "merfish")
-RETROSEQ_DATA_DIR = os.path.join(DATA_DIR, "retroseq")
-MESH_DIR = os.path.join(DATA_DIR, "LC_percentile_meshes")
-MESH_DIR_sym = os.path.join(DATA_DIR, "mesh")
-OTHERS_DIR = os.path.join(DATA_DIR, "others")
+SNRNA_DATA_DIR = os.path.join(DATA_DIR, "LC_NE_preprocessed/snRNAseq/")
+MERFISH_DATA_DIR = os.path.join(DATA_DIR, "LC_NE_preprocessed/merfish/")
+RETROSEQ_DATA_DIR = os.path.join(DATA_DIR, "LC_NE_preprocessed/retroseq/")
+MESH_DIR = os.path.join(DATA_DIR, "LC_percentile_meshes/")
+MESH_DIR_sym = os.path.join(DATA_DIR, "mesh/")
+OTHERS_DIR = os.path.join(DATA_DIR, "others/")
 TMP_OUT_DIR = OUTPUT_DIR
 
 # Output directories for figures

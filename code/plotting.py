@@ -165,21 +165,42 @@ def plot_spatial(ax,
 
 def scatter_with_jitter(ax, S, cvals,
     s=10, scl_jitter=0, direction='c',
-    jittering=False, ascending=False, rand_seed=888, **kwargs):
+    jittering=False, ascending=False, randomize=False, rand_seed=888, **kwargs):
     '''note that the default is False (no jitter assuming your input data is already jittered!!!)'''
     if jittering: print('**** you are actually JITTERING ****')
     import numpy as np
     i = 2 if direction == 'c' else 0
-    order = np.argsort(cvals) if ascending else np.arange(len(cvals))
+    # A single flat color (e.g. 'blue', 'gray', or an RGB(A) tuple) has no per-point
+    # value to map, so skip value-based ordering and colormapping.
+    is_solid = isinstance(cvals, str) or (
+        isinstance(cvals, (tuple, list))
+        and len(cvals) in (3, 4)
+        and all(isinstance(v, (int, float)) for v in cvals))
+    if randomize:
+        # shuffle draw order so overlapping points aren't biased by value (reproducible via rand_seed)
+        order = np.random.default_rng(rand_seed).permutation(S.shape[0])
+    elif is_solid:
+        order = np.arange(S.shape[0])
+    else:
+        order = np.argsort(cvals) if ascending else np.arange(len(cvals))
     x = S[order, i]
     y = S[order, 1]
-    cvals = np.asarray(cvals)[order]
+    if not is_solid:
+        cvals = np.asarray(cvals)[order]
     if jittering:
         rng = np.random.default_rng(rand_seed)
         jitter_scale_x = scl_jitter * (x.max() - x.min())
         jitter_scale_y = scl_jitter * (y.max() - y.min())
         x = x + rng.uniform(-jitter_scale_x, jitter_scale_x, size=len(x))
         y = y + rng.uniform(-jitter_scale_y, jitter_scale_y, size=len(y))
+
+    if is_solid:
+        # cmap/vmin/vmax are meaningless for a flat color; drop them if passed.
+        solid_kwargs = {k: v for k, v in kwargs.items()
+                        if k not in ('cmap', 'vmin', 'vmax')}
+        scatter_defaults = dict(edgecolors='black', lw=0.01)
+        scatter_kwargs = {**scatter_defaults, **solid_kwargs}
+        return ax.scatter(x, y, color=cvals, s=s, **scatter_kwargs)
 
     scatter_defaults = dict(
         cmap='viridis',
