@@ -17,7 +17,7 @@ ln -sf /results /code/output 2>/dev/null || true
 NOTEBOOKS=(
     "notebooks/snRNA/plot_all_snRNA_figs.ipynb"
     "notebooks/snRNA/continuum_analayis.ipynb"
-    "notebooks/snRNA/structure_analysis.ipynb"    
+    # "notebooks/snRNA/structure_analysis.ipynb"    
     "notebooks/snRNA/composite_figure.ipynb"    
     "notebooks/merfish/plot_all_merfish_figs.ipynb" 
     "notebooks/merfish/supplemental_figure_S10_v2.ipynb"   
@@ -31,7 +31,7 @@ for notebook in "${NOTEBOOKS[@]}"; do
     echo ">>> Executing: $notebook"
     if [[ -f "$notebook" ]]; then
         jupyter nbconvert --to notebook --execute --inplace \
-            --ExecutePreprocessor.timeout=3600 "$notebook"
+            --ExecutePreprocessor.timeout=-1 "$notebook"
         echo "✓ Completed: $notebook"
     else
         echo "ERROR: File not found: $notebook"

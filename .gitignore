@@ -70,7 +70,11 @@ test_notebooks.py
 
 # Scratch notebooks
 /notebook/*scratch*.ipynb
+/notebook/outdated/*
 **/scratch_*.ipynb
 **/scratch.ipynb
 **/*OLD.ipynb
 .Trash-0/
+
+# Claude Code (worktrees, local settings)
+.claude/
