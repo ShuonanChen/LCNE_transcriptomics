@@ -29,9 +29,9 @@ if CODE_DIR not in sys.path:
 FIGURE_DIR = os.path.join(OUTPUT_DIR, "figures")
 
 # Sub-directories for different data types
-SNRNA_DATA_DIR = os.path.join(DATA_DIR, "LC_NE_preprocessed/snRNAseq/")
-MERFISH_DATA_DIR = os.path.join(DATA_DIR, "LC_NE_preprocessed/merfish/")
-RETROSEQ_DATA_DIR = os.path.join(DATA_DIR, "LC_NE_preprocessed/retroseq/")
+SNRNA_DATA_DIR = os.path.join(DATA_DIR, "LCNE-transcriptomics-preprocessing_2026-07-08_13-25-00/snRNAseq/")
+MERFISH_DATA_DIR = os.path.join(DATA_DIR, "LCNE-transcriptomics-preprocessing_2026-07-08_13-25-00/merfish/")
+RETROSEQ_DATA_DIR = os.path.join(DATA_DIR, "LCNE-transcriptomics-preprocessing_2026-07-08_13-25-00/retroseq/")
 MESH_DIR = os.path.join(DATA_DIR, "LC_percentile_meshes/")
 # MESH_DIR_sym = os.path.join(DATA_DIR, "mesh/")
 OTHERS_DIR = os.path.join(DATA_DIR, "others/")
