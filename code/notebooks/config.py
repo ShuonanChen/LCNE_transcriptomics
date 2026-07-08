@@ -84,32 +84,80 @@ def configure_matplotlib():
         print("Warning: Helvetica font not found. Using default font.")
 
 # ============= HELPER FUNCTIONS =============
-def save_figure(filename, dir_path=FIGURE_DIR, formats=["svg", "png"], dpi=500):
+def save_figure(filename, dir_path=FIGURE_DIR, formats=["svg", "png"], dpi=500,
+                source_data=None):
     """
     Save figure in multiple formats
-    
-    Parameters:
     -----------
-    filename : str
-        Figure filename (without path or extension)
-    dir_path : str, default=FIGURE_DIR
-        Directory to save figure in
     formats : list, default=["svg", "png"]
         List of formats to save figure in
     dpi : int, default=300
         Resolution for raster formats
+    source_data : pd.DataFrame        -> writes <filename>_source_data.csv
+                : dict{panel_name: pd.DataFrame} -> writes <filename>_source_data.xlsx,
+                                                    one sheet per panel
+                : None                -> no source data written
     """
     os.makedirs(dir_path, exist_ok=True)
-    
+
     # Convert single format to list
     if isinstance(formats, str):
         formats = [formats]
-        
+
     # Save in each format
     for format in formats:
         full_path = f"{dir_path}/{filename}.{format}"
         print(f"Saving figure to: {full_path}")
         plt.savefig(full_path, format=format, dpi=dpi)
+
+    # Write publication source data alongside the figure
+    if source_data is not None:
+        _save_source_data(filename, dir_path, source_data)
+
+
+def _sanitize_sheet_name(name, used):
+    """Make an Excel-safe (<=31 chars, no []:*?/\\), unique sheet name."""
+    import re
+    safe = re.sub(r'[\[\]:\*\?/\\]', '_', str(name))[:31] or "sheet"
+    base, k = safe, 1
+    while safe in used:
+        suffix = f"_{k}"
+        safe = base[:31 - len(suffix)] + suffix
+        k += 1
+    used.add(safe)
+    return safe
+
+
+def _save_source_data(filename, dir_path, source_data):
+    """Write publication source data: a DataFrame -> CSV, a dict of DataFrames
+    -> one .xlsx with a sheet per panel (falls back to per-panel CSVs if no
+    Excel engine is installed). The DataFrame index is always preserved."""
+    import pandas as pd
+
+    if isinstance(source_data, pd.DataFrame):
+        out_path = f"{dir_path}/{filename}_source_data.csv"
+        print(f"Saving source data to: {out_path}")
+        source_data.to_csv(out_path)
+    elif isinstance(source_data, dict):
+        out_path = f"{dir_path}/{filename}_source_data.xlsx"
+        try:
+            used = set()
+            with pd.ExcelWriter(out_path) as writer:
+                for panel_name, df in source_data.items():
+                    df.to_excel(writer, sheet_name=_sanitize_sheet_name(panel_name, used))
+            print(f"Saving source data to: {out_path}")
+        except (ImportError, ValueError) as e:
+            # No Excel engine (openpyxl/xlsxwriter) available -> one CSV per panel
+            print(f"Excel writer unavailable ({e}); writing per-panel CSVs instead")
+            for panel_name, df in source_data.items():
+                safe = str(panel_name).replace('/', '_').replace('\\', '_')
+                csv_path = f"{dir_path}/{filename}_source_data_{safe}.csv"
+                print(f"Saving source data to: {csv_path}")
+                df.to_csv(csv_path)
+    else:
+        raise TypeError(
+            "source_data must be a pandas DataFrame or dict of DataFrames, "
+            f"got {type(source_data)}")
 
 # ============= PROJECT CONSTANTS =============
 # Add any project-specific constants here
