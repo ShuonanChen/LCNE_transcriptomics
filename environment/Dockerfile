@@ -4,7 +4,7 @@ FROM $REGISTRY_HOST/codeocean/pytorch:2.4.0-cuda12.4.0-mambaforge24.5.0-0-python
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG GIT_ASKPASS
-COPY git-askpass /
+COPY git-ask-pass /
 
 RUN conda install -y \
         jupyter==1.1.1 \
@@ -14,8 +14,17 @@ RUN conda install -y \
     && conda clean -ya
 
 
-RUN pip install trimesh==4.9.0 
+RUN pip install trimesh==4.9.0
 RUN pip install --no-cache-dir "numpy<2" "pydeseq2"
+# Pin numpyro to match the conda-resolved jax 0.4.31. scvi-tools 1.3.3 otherwise
+# pulls numpyro 0.21.0, which requires jax>=0.4.34 (jax.api_util.debug_info) and
+# breaks `import scvi`. numpyro is only used by scvi for a few distributions
+# (the SCVI model itself runs on torch), so this leaves jax/jaxlib/torch untouched.
+RUN pip install --no-cache-dir "numpyro==0.16.1"
+# diptest: Hartigan's dip test for the continuum-vs-discrete analysis
+# (test_structures.dip_dist_multivariate). Falls back to a pure-scipy Silverman
+# test if absent, but diptest gives faster, calibrated p-values.
+RUN pip install --no-cache-dir "diptest==0.10.0"
 
 
 ADD "https://github.com/coder/code-server/releases/download/v4.100.3/code-server-4.100.3-linux-amd64.tar.gz" /.code-server/code-server.tar.gz
@@ -32,3 +41,18 @@ RUN code-server --extensions-dir="/.vscode/extensions" --install-extension conti
     && code-server --extensions-dir="/.vscode/extensions" --install-extension reageyao.biosyntax \
     && code-server --extensions-dir="/.vscode/extensions" --install-extension reditorsupport.r \
     && code-server --extensions-dir="/.vscode/extensions" --install-extension saoudrizwan.claude-dev
+
+# Default VS Code (code-server) workstation settings:
+#   - terminal panel opens on the right instead of the bottom
+#   - Solarized Light color theme (built-in, no extension needed)
+RUN mkdir -p /root/.local/share/code-server/User /.vscode/User \
+    && printf '%s\n' '{' \
+        '  "workbench.panel.defaultLocation": "right",' \
+        '  "workbench.colorTheme": "Solarized Light"' \
+        '}' | tee /root/.local/share/code-server/User/settings.json > /.vscode/User/settings.json
+
+
+
+COPY postInstall /
+RUN --mount=type=secret,id=secrets . /run/secrets/secrets \
+    && /postInstall
