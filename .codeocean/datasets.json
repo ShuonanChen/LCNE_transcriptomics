@@ -2,12 +2,8 @@
 	"version": 1,
 	"attached_datasets": [
 		{
-			"id": "211c8ff2-3754-4f55-a758-4d07e8ab2cc7",
-			"mount": "snRNAseq_LCNE_batchcorrected"
-		},
-		{
-			"id": "32df97b8-c759-4ae8-bfe1-371111655e32",
-			"mount": "merfish"
+			"id": "b0a73127-84b6-4223-93a2-fff203a10199",
+			"mount": "LC_NE_preprocessed"
 		},
 		{
 			"id": "c712751d-f744-4fe8-9657-93a7084eab22",

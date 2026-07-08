@@ -325,7 +325,7 @@ def plot_rf_results(results, title_suffix=""):
         plt.text(xi, m + e + 0.02, f"{m:.2f}", ha="center", va="bottom")
     # legend proxies
     plt.plot([], [], color='red', linestyle='dashed', label='chance (1/n_classes)')
-    plt.plot([], [], color='purple', linestyle='dotted', label='majority-class baseline', lw=2)
+    plt.plot([], [], color='darkorange', linestyle='dotted', label='majority-class baseline', lw=2)
     plt.xticks(x, [label.replace('_', ' ').title() for label in labels])
     plt.ylabel(metric.replace('_', ' ').title())
     plt.ylim(0, 1.0)
