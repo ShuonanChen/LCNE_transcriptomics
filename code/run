@@ -16,8 +16,7 @@ ln -sf /results /code/output 2>/dev/null || true
 # Order matters: snRNA notebooks first (generate gene lists), then MERFISH/Retro notebooks (use gene lists)
 NOTEBOOKS=(
     "notebooks/snRNA/plot_all_snRNA_figs.ipynb"
-    "notebooks/snRNA/continuum_analayis.ipynb"
-    # "notebooks/snRNA/structure_analysis.ipynb"    
+    # "notebooks/snRNA/continuum_analayis.ipynb"
     "notebooks/snRNA/composite_figure.ipynb"    
     "notebooks/merfish/plot_all_merfish_figs.ipynb" 
     "notebooks/merfish/supplemental_figure_S10_v2.ipynb"   
