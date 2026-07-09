@@ -25,6 +25,9 @@ RUN pip install --no-cache-dir "numpyro==0.16.1"
 # (test_structures.dip_dist_multivariate). Falls back to a pure-scipy Silverman
 # test if absent, but diptest gives faster, calibrated p-values.
 RUN pip install --no-cache-dir "diptest==0.10.0"
+# aind-data-schema: build AIND-standard metadata (data_description/processing) for
+# scientist-derived data assets. Used by code/make_mmidas_metadata.py.
+RUN pip install --no-cache-dir "aind-data-schema==2.8.1"
 
 
 ADD "https://github.com/coder/code-server/releases/download/v4.100.3/code-server-4.100.3-linux-amd64.tar.gz" /.code-server/code-server.tar.gz
