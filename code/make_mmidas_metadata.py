@@ -38,19 +38,19 @@ import aind_data_schema.core.data_description as ds
 import aind_data_schema.core.processing as ps
 from aind_data_schema_models.modalities import Modality
 
-# ============================ EDIT THESE (TODO) ============================
+# ============================ EDIT THESE ============================
 # The MMIDAS run happened outside this capsule, so these are not recorded here.
 # Fill them in before creating the shareable/publishable data asset.
 # Analysis repo (not yet public, but will be). tz-aware datetimes required by schema.
 MMIDAS_URL = "https://github.com/AllenInstitute/LC-NE-MixRep"
-# Optional but recommended for reproducibility (a warning is emitted if both are None,
-# and a future schema version may require one). Set one when known.
-MMIDAS_VERSION = None            # e.g. "1.0" (GitHub/CO release), OR set the commit hash below
+# Placeholder release version: the analysis code is not yet merged to the repo, so
+# v1.0 is recorded now and can be repointed to the real GitHub/CO release once merged.
+MMIDAS_VERSION = "v1.0"          # OR set the commit hash below instead
 MMIDAS_COMMIT_HASH = None        # e.g. "89abcdef01234567" (7-60 hex chars); leave None if using version
 
-RUN_START = datetime(2026, 7, 9, tzinfo=timezone.utc)
-RUN_END = datetime(2026, 7, 9, tzinfo=timezone.utc)
-CREATION_TIME = RUN_END                                 # asset creation time
+RUN_START = datetime(2026, 7, 9, 10, 34, 0, tzinfo=timezone.utc)
+RUN_END = datetime(2026, 7, 9, 10, 34, 0, tzinfo=timezone.utc)
+CREATION_TIME = RUN_END                                 # asset creation time (-> name suffix)
 
 # Funding is required by the schema (>=1 entry). Grant number omitted for now;
 # add the grant number(s) before the aind-open-data transfer.
@@ -71,7 +71,9 @@ PICKLE_SOURCE = os.path.join("/data", PICKLE_NAME)  # CO mounts the asset as thi
 # name can be added later once known.
 # TODO: confirm/replace this asset ID (and add a name) before publication.
 SOURCE_ASSET_ID = "211c8ff2-3754-4f55-a758-4d07e8ab2cc7"
-ASSET_LABEL = "all-mmidas-outcome-w-seed-w-pca"
+# Informative asset name. Independent of the pickle filename/mount (PICKLE_NAME), so
+# renaming here does not affect how the notebook locates the data file.
+ASSET_LABEL = "LC-mmidas-results-seed-pca"
 INVESTIGATOR = "Shuonan Chen"
 # project_name pattern forbids underscores, so the capsule's "LCNE_transcriptomics"
 # is recorded here with a dash.

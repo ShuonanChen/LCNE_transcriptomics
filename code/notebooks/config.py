@@ -35,8 +35,31 @@ MERFISH_DATA_DIR = os.path.join(DATA_DIR, "LCNE-transcriptomics-preprocessing_20
 RETROSEQ_DATA_DIR = os.path.join(DATA_DIR, "LCNE-transcriptomics-preprocessing_2026-07-08_16-23-00/retroseq/")
 MESH_DIR = os.path.join(DATA_DIR, "LC_percentile_meshes/")
 # MESH_DIR_sym = os.path.join(DATA_DIR, "mesh/")
-OTHERS_DIR = os.path.join(DATA_DIR, "others/")
 TMP_OUT_DIR = OUTPUT_DIR
+
+# Data files provided as data assets (see code/make_gencode_metadata.py and
+# code/make_mmidas_metadata.py). Code Ocean mounts each asset under a directory named
+# after the *asset* (not the file), so the mount folder name is not predictable.
+# _resolve_data_file finds the file by name whether it is loose in /data or nested one
+# level inside any asset-mount directory.
+import glob as _glob
+
+
+def _resolve_data_file(filename):
+    """Locate a data file by name: loose in /data, or nested one level inside a
+    data-asset mount directory (whatever the mount is named). Falls back to the
+    direct /data path if not found."""
+    direct = os.path.join(DATA_DIR, filename)
+    if os.path.exists(direct):
+        return direct
+    hits = sorted(_glob.glob(os.path.join(DATA_DIR, "*", filename)))
+    return hits[0] if hits else direct
+
+
+# GENCODE vM38 mouse gene annotation (retroseq gene-length -> TPM); no runtime download.
+GENCODE_GTF = _resolve_data_file("gencode.vM38.annotation.gtf.gz")
+# MMIDAS clustering-outcome pickle (used by snRNA/continuum_analayis.ipynb).
+MMIDAS_PKL = _resolve_data_file("all_mmidas_outcome_w_seed_w_pca.pkl")
 
 # Output directories for figures
 SNRNA_FIGURE_DIR = os.path.join(FIGURE_DIR, "snRNAseq")
