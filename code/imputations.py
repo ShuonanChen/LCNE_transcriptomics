@@ -184,8 +184,20 @@ def impute_pseudocluster(adata_query, adata_ref, pc_dir,
     '''
     
     arc_path = pc_dir+'/cellID_pc_0722.csv'
-    arcinfo = pd.read_csv(arc_path)
-    assert (adata_ref.obs.index == arcinfo['cellID']).all()
+    arcinfo = pd.read_csv(arc_path).set_index('cellID')
+
+    # Align the pseudocluster table to the reference cells by cellID instead of
+    # assuming the CSV is in the same order / has exactly the same cells as
+    # adata_ref. The CSV is generated from the full snRNA data, which can differ
+    # from the merbar-matched subset used here by a handful of cells, so a
+    # positional comparison breaks. Keep only reference cells that have a
+    # pseudocluster and put arcinfo in the same order as adata_ref.
+    shared_cells = adata_ref.obs.index.intersection(arcinfo.index)
+    n_missing = adata_ref.n_obs - len(shared_cells)
+    if n_missing:
+        print(f'dropping {n_missing} reference cell(s) with no pseudocluster in the arc CSV')
+    adata_ref = adata_ref[shared_cells].copy()
+    arcinfo = arcinfo.loc[adata_ref.obs.index].reset_index()
 
     common = np.intersect1d(adata_query.var_names, adata_ref.var_names)
     print(f'using {len(common)} genes to run the imputations!')
