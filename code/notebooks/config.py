@@ -81,8 +81,17 @@ for directory in [DATA_DIR, OUTPUT_DIR, FIGURE_DIR,
     os.makedirs(directory, exist_ok=True)
 
 # ============= PLOT CONFIGURATION =============
-# Default font path
-FONT_PATH = os.path.join(CODE_DIR, 'utils', 'Helvetica.ttc')
+# Publication font: TeX Gyre Heros, a Helvetica-metric-compatible font that is
+# freely redistributable under the GUST Font License (see utils/FONT_LICENSE.txt).
+FONT_DIR = os.path.join(CODE_DIR, 'utils')
+FONT_NAME = 'TeX Gyre Heros'
+FONT_PATH = os.path.join(FONT_DIR, 'texgyreheros-regular.otf')
+_FONT_FACES = [
+    'texgyreheros-regular.otf',
+    'texgyreheros-bold.otf',
+    'texgyreheros-italic.otf',
+    'texgyreheros-bolditalic.otf',
+]
 
 
 def configure_matplotlib():
@@ -98,14 +107,17 @@ def configure_matplotlib():
         'ytick.labelsize': 8,
         'legend.fontsize': 8
     })
-    
-    # Set font if available
+
+    # Set font if available (registers all faces so bold/italic resolve)
     if os.path.exists(FONT_PATH):
-        fm.fontManager.addfont(FONT_PATH)
+        for _face in _FONT_FACES:
+            _fp = os.path.join(FONT_DIR, _face)
+            if os.path.exists(_fp):
+                fm.fontManager.addfont(_fp)
         plt.rcParams['font.family'] = 'sans-serif'
-        plt.rcParams['font.sans-serif'] = ['Helvetica']
+        plt.rcParams['font.sans-serif'] = [FONT_NAME]
     else:
-        print("Warning: Helvetica font not found. Using default font.")
+        print(f"Warning: {FONT_NAME} font not found. Using default font.")
 
 # ============= HELPER FUNCTIONS =============
 def save_figure(filename, dir_path=FIGURE_DIR, formats=["svg", "png"], dpi=500,

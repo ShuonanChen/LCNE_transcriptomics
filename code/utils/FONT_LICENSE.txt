@@ -1,0 +1,24 @@
+Bundled fonts: TeX Gyre Heros
+==============================
+
+Files:
+  texgyreheros-regular.otf
+  texgyreheros-bold.otf
+  texgyreheros-italic.otf
+  texgyreheros-bolditalic.otf
+
+TeX Gyre Heros is a Helvetica-metric-compatible sans-serif font produced by
+the GUST e-foundry. It is used here in place of Helvetica so that publication
+figures can be reproduced without shipping a proprietary, non-redistributable
+font, while keeping glyph metrics (and therefore figure layout) unchanged.
+
+Source (upstream):
+  https://www.gust.org.pl/projects/e-foundry/tex-gyre/heros
+  Mirror used for download: https://mirrors.ctan.org/fonts/tex-gyre/opentype/
+
+License: GUST Font License (GFL), version 1.0 — an LPPL-based free-software
+font license that permits use, redistribution, and modification. Full text:
+  https://www.gust.org.pl/projects/e-foundry/licenses/GUST-FONT-LICENSE.txt
+
+NOTE: For publication, include the full GUST Font License text alongside these
+fonts (download the file above and save it here as GUST-FONT-LICENSE.txt).
