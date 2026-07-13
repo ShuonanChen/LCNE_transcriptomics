@@ -75,6 +75,20 @@ modality; the remaining notebooks generate supplemental figures and supporting a
 
 If you use this pipeline or the derived datasets, please cite the associated publication
 and the Allen Institute for Neural Dynamics.
+```
+@article{xxxx,
+  title   = {Topographic structure and function of locus coeruleus
+norepinephrine neurons},
+  author  = {Zhixiao Su},
+  journal = {xxx},
+  volume  = {xx},
+  number  = {xx},
+  pages   = {xxx},
+  year    = {xxx},
+  publisher = {xxx}
+}
+```
+
 
 ## License
 
