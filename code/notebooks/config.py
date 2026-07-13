@@ -29,19 +29,13 @@ if CODE_DIR not in sys.path:
 FIGURE_DIR = os.path.join(OUTPUT_DIR, "figures")
 
 
-# Sub-directories for different data types
-SNRNA_DATA_DIR = os.path.join(DATA_DIR, "LCNE-transcriptomics-preprocessing_2026-07-08_16-23-00/snRNAseq/")
-MERFISH_DATA_DIR = os.path.join(DATA_DIR, "LCNE-transcriptomics-preprocessing_2026-07-08_16-23-00/merfish/")
-RETROSEQ_DATA_DIR = os.path.join(DATA_DIR, "LCNE-transcriptomics-preprocessing_2026-07-08_16-23-00/retroseq/")
-MESH_DIR = os.path.join(DATA_DIR, "LC_percentile_meshes/")
-# MESH_DIR_sym = os.path.join(DATA_DIR, "mesh/")
-TMP_OUT_DIR = OUTPUT_DIR
-
-# Data files provided as data assets (see code/make_gencode_metadata.py and
-# code/make_mmidas_metadata.py). Code Ocean mounts each asset under a directory named
-# after the *asset* (not the file), so the mount folder name is not predictable.
-# _resolve_data_file finds the file by name whether it is loose in /data or nested one
-# level inside any asset-mount directory.
+# Data assets are mounted under a directory named after the *asset* (see
+# code/make_gencode_metadata.py and code/make_mmidas_metadata.py). Those asset names embed
+# the generation timestamp (e.g. LCNE-transcriptomics-preprocessing_2026-07-10_12-53-00), so
+# the mount folder name is not predictable and changes whenever the asset is regenerated and
+# re-attached. Resolve assets at runtime instead of hardcoding the dated name:
+#   _resolve_data_file  finds a file by name (loose in /data or nested one level in a mount)
+#   _resolve_data_dir   finds an asset mount directory by its (date-less) name prefix
 import glob as _glob
 
 
@@ -55,6 +49,31 @@ def _resolve_data_file(filename):
     hits = sorted(_glob.glob(os.path.join(DATA_DIR, "*", filename)))
     return hits[0] if hits else direct
 
+
+def _resolve_data_dir(prefix):
+    """Locate a data-asset mount directory by its date-less name `prefix` (e.g.
+    'LCNE-transcriptomics-preprocessing'), so a regenerated asset with a new timestamp
+    resolves with no code change. Returns the lexically-newest match (date-stamped names
+    sort chronologically) and warns if more than one is attached. Falls back to
+    DATA_DIR/prefix if none match, so downstream os.path.join / makedirs stay well-defined."""
+    hits = sorted(d for d in _glob.glob(os.path.join(DATA_DIR, prefix + "*"))
+                  if os.path.isdir(d))
+    if not hits:
+        return os.path.join(DATA_DIR, prefix)
+    if len(hits) > 1:
+        print(f"Warning: multiple '{prefix}*' assets attached ({[os.path.basename(h) for h in hits]}); "
+              f"using newest: {os.path.basename(hits[-1])}")
+    return hits[-1]
+
+
+# Sub-directories for different data types (resolved from the LCNE asset mount by prefix)
+LCNE_ASSET_DIR = _resolve_data_dir("LCNE-transcriptomics-preprocessing")
+SNRNA_DATA_DIR = os.path.join(LCNE_ASSET_DIR, "snRNAseq/")
+MERFISH_DATA_DIR = os.path.join(LCNE_ASSET_DIR, "merfish/")
+RETROSEQ_DATA_DIR = os.path.join(LCNE_ASSET_DIR, "retroseq/")
+MESH_DIR = _resolve_data_dir("LC_percentile_meshes")
+# MESH_DIR_sym = os.path.join(DATA_DIR, "mesh/")
+TMP_OUT_DIR = OUTPUT_DIR
 
 # GENCODE vM38 mouse gene annotation (retroseq gene-length -> TPM); no runtime download.
 GENCODE_GTF = _resolve_data_file("gencode.vM38.annotation.gtf.gz")
