@@ -67,3 +67,16 @@ output/ -> /results        # figures written here
 
 The `plot_all_*_figs.ipynb` notebooks produce the main manuscript figures for each
 modality; the remaining notebooks generate supplemental figures and supporting analyses.
+
+
+
+
+## Citation
+
+If you use this pipeline or the derived datasets, please cite the associated publication
+and the Allen Institute for Neural Dynamics.
+
+## License
+
+Released under the MIT License. See [LICENSE](LICENSE) for details.
+Copyright (c) Allen Institute for Neural Dynamics.
