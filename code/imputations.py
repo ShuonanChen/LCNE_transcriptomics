@@ -183,7 +183,7 @@ def impute_pseudocluster(adata_query, adata_ref, pc_dir,
         sigma=0.1 (gaussian).
     '''
     
-    arc_path = pc_dir+'/cellID_pc_0722.csv'
+    arc_path = pc_dir+'/cell_ID_peudocluster.csv'
     arcinfo = pd.read_csv(arc_path).set_index('cellID')
 
     # Align the pseudocluster table to the reference cells by cellID instead of
