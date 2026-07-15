@@ -15,7 +15,7 @@ RUN conda install -y \
 
 
 RUN pip install trimesh==4.9.0
-RUN pip install --no-cache-dir "numpy<2" "pydeseq2"
+RUN pip install --no-cache-dir "numpy<2" "pydeseq2==0.5.2"
 # Pin numpyro to match the conda-resolved jax 0.4.31. scvi-tools 1.3.3 otherwise
 # pulls numpyro 0.21.0, which requires jax>=0.4.34 (jax.api_util.debug_info) and
 # breaks `import scvi`. numpyro is only used by scvi for a few distributions

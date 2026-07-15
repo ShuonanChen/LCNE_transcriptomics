@@ -8,6 +8,9 @@ figures for the accompanying manuscript.
 This is a [Code Ocean](https://codeocean.com) capsule: the full analysis runs end to end
 with a single command, and all figures are written to `/results/figures/`.
 
+Source code is also available on GitHub:
+[AllenNeuralDynamics/LCNE_transcriptomics](https://github.com/AllenNeuralDynamics/LCNE_transcriptomics).
+
 ## Overview
 
 The analysis spans three complementary data modalities:
@@ -92,5 +95,5 @@ norepinephrine neurons},
 
 ## License
 
-Released under the MIT License. See [LICENSE](LICENSE) for details.
+Released under the MIT License. See [LICENSE](LICENSE.txt) for details.
 Copyright (c) Allen Institute for Neural Dynamics.
