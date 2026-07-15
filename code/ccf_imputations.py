@@ -29,8 +29,7 @@ def impute_spatial_coordinates(adata_query, adata_ref, k=3, epsilon=1e-10,
     else:
         raise ValueError("similarity_transform must be 'inverse' or 'softmax' or 'gaussian'")
 
-    ref_spatial = processing.get_hemi(adata_ref.obsm['spatial'],
-                                      meshhome = '/allen/aind/scratch/shuonan.chen/scripts/Pons_MERFISH/mesh/')
+    ref_spatial = processing.get_hemi(adata_ref.obsm['spatial'])
 
     imputed_coords = np.zeros((adata_query.n_obs, 3))
     for i in range(adata_query.n_obs):
