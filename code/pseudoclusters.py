@@ -113,7 +113,7 @@ def calculate_projection_scores(trajectory_info, n_points=1000, use_optimizer=Fa
     best_idx = np.argmin(d2, axis=1)             # for each cell, index into t_lin
     t_opt    = t_lin[best_idx]
     scores_0_1   = (t_opt - t_min) / (t_max - t_min)
-    if scores_0_1[0] >   0.5:  # keep the original order!
+    if scores_0_1[0] <   0.5:  # flipped orientation: dorsal/high-score end -> green under PiYG
         foo = scores_0_1
     else:
         foo = 1-scores_0_1
