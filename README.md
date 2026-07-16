@@ -76,19 +76,22 @@ modality; the remaining notebooks generate supplemental figures and supporting a
 
 ## Citation
 
-If you use this pipeline or the derived datasets, please cite the associated publication
+If you use this pipeline or the derived datasets, please cite the associated preprint
 and the Allen Institute for Neural Dynamics.
-```
-@article{xxxx,
-  title   = {Topographic structure and function of locus coeruleus
-norepinephrine neurons},
-  author  = {Zhixiao Su},
-  journal = {xxx},
-  volume  = {xx},
-  number  = {xx},
-  pages   = {xxx},
-  year    = {xxx},
-  publisher = {xxx}
+
+> Su, Z., Kosillo, P., Jung, K., Chen, S., Summers, M. T., Piet, A., ... Chandrashekar,
+> J. V., & Cohen, J. Y. (2026). *Topographic structure and function of locus coeruleus
+> norepinephrine neurons.* bioRxiv. https://doi.org/10.64898/2026.04.10.717727
+
+```bibtex
+@article{su2026topographic,
+  title     = {Topographic structure and function of locus coeruleus norepinephrine neurons},
+  author    = {Su, Zhixiao and Kosillo, Polina and Jung, Kanghoon and Chen, Shuonan and Summers, Mathew T. and Piet, Alex and Hou, Han and Hagihara, Kenta M. and Friedmann, Drew and Ho-Shing, Olivia and Becker, Matthew I. and Chartrand, Thomas and Grotz, Peter and Hilton-VanOsdall, Ella and Lee, Margaret and Javeri, Rajvi and Tuggle, Samantha L. and Ouellette, Naveen and Myers, Holly and Laiton, Camilo and Wulf, Kaelin and Rohde, John and Buccino, Alessio P. and Arshadi, Cameron and Wang, Di and Seshamani, Sharmishtaa and Vasquez, Sonya and Eng, Carolyn M. and Ollerenshaw, Douglas R. and Dee, Nick and Casper, Tamara and Ho, Windy and Jungert, Matthew and Jordan, Atlas and Phillips, Elliot and Chakka, Anish Bhaswanth and Nasirova, Kamiliam and Blake, Krista and McCutcheon, Audrey and Koch, Megan and Vergara, Maria Camila and Smith, Kimberly A. and Jarsky, Tim and Lusk, Nicholas and Rue, Mara C. P. and Chen, Xiaoyin and Siegle, Joshua H. and Glaser, Adam K. and Lee, Brian R. and Svoboda, Karel and Isogai, Yoh and Chandrashekar, Jayaram V. and Cohen, Jeremiah Y.},
+  journal   = {bioRxiv},
+  year      = {2026},
+  publisher = {Cold Spring Harbor Laboratory},
+  doi       = {10.64898/2026.04.10.717727},
+  url       = {https://www.biorxiv.org/content/10.64898/2026.04.10.717727v1}
 }
 ```
 
