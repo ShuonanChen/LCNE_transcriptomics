@@ -42,7 +42,7 @@ from aind_data_schema_models.modalities import Modality
 # The MMIDAS run happened outside this capsule, so these are not recorded here.
 # Fill them in before creating the shareable/publishable data asset.
 # Analysis repo (not yet public, but will be). tz-aware datetimes required by schema.
-MMIDAS_URL = "https://github.com/AllenInstitute/LC-NE-MixRep"
+MMIDAS_URL = "https://github.com/AllenInstitute/MMIDAS_LC-NE"
 # Placeholder release version: the analysis code is not yet merged to the repo, so
 # v1.0 is recorded now and can be repointed to the real GitHub/CO release once merged.
 MMIDAS_VERSION = "v1.0"          # OR set the commit hash below instead
