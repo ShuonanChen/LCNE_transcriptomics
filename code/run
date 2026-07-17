@@ -18,6 +18,7 @@ NOTEBOOKS=(
     "notebooks/snRNA/plot_all_snRNA_figs.ipynb"
     "notebooks/snRNA/continuum_analayis.ipynb"
     "notebooks/snRNA/composite_figure.ipynb"    
+    "notebooks/snRNA/fig_S9.ipynb"
     "notebooks/merfish/plot_all_merfish_figs.ipynb" 
     "notebooks/merfish/supplemental_figure_S10_v2.ipynb"   
     "notebooks/retroseq/plot_all_retroseq_figs.ipynb"
